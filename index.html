@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultra Secure P2P (Hardware Accelerated)</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        :root { --primary: #1e272e; --secondary: #0fb9b1; --bg: #f1f2f6; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { max-width: 450px; width: 90%; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; text-align: center; }
+        header { background: var(--primary); color: white; padding: 20px; }
+        header h2 { margin: 0; font-size: 22px; letter-spacing: 1px; }
+        main { padding: 25px; }
+        #status-box { background: #d1d8e0; color: #2d3436; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; }
+        .password-section { margin-bottom: 20px; text-align: left; }
+        .password-section label { font-size: 13px; font-weight: bold; color: #333; }
+        input[type="password"] { width: 100%; box-sizing: border-box; padding: 12px; margin-top: 5px; border: 2px solid #dfe4ea; border-radius: 6px; font-size: 15px; outline: none; transition: 0.3s;}
+        input[type="password"]:focus { border-color: var(--secondary); }
+        #qrcode { display: flex; justify-content: center; margin: 15px 0; padding: 10px; background: white; border-radius: 10px; }
+        .btn { background: var(--secondary); color: white; border: none; padding: 14px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; transition: 0.3s; }
+        .btn:hover { background: #0da39c; }
+        .btn:disabled { background: #a4b0be; cursor: not-allowed; }
+        #transfer-area { display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
+        progress { width: 100%; height: 22px; margin-top: 15px; display: none; border-radius: 10px; overflow: hidden; }
+        progress::-webkit-progress-value { background-color: var(--secondary); }
+        #progress-text { font-size: 13px; color: #555; margin-top: 8px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h2>⚡ Hyper-Secure Drop</h2>
+            <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">Hardware Accelerated AES-256-GCM</div>
+        </header>
+        
+        <main>
+            <div id="status-box">Status: <span id="current-status">Booting Engine...</span></div>
+
+            <div class="password-section">
+                <label>Encryption Key (Password)</label>
+                <input type="password" id="crypto-pass" placeholder="Enter a secret password...">
+            </div>
+
+            <div id="qr-area">
+                <div id="qrcode"></div>
+                <p style="font-size: 12px; color: #7f8fa6;">Scan QR with receiving device</p>
+            </div>
+
+            <div id="transfer-area">
+                <p style="color: var(--secondary); font-weight: bold;">✅ Tunnel Secured</p>
+                <input type="file" id="file-input" style="margin-bottom: 15px; width: 100%;">
+                <button id="send-btn" class="btn">🚀 Encrypt & Send</button>
+                
+                <progress id="progress-bar" max="100" value="0"></progress>
+                <div id="progress-text"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const statusEl = document.getElementById('current-status');
+            const qrArea = document.getElementById('qr-area');
+            const transferArea = document.getElementById('transfer-area');
+            const passInput = document.getElementById('crypto-pass');
+            const fileInput = document.getElementById('file-input');
+            const sendBtn = document.getElementById('send-btn');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+
+            let peer = null;
+            let currentConn = null;
+            const CHUNK_SIZE = 256 * 1024; // 256 KB Chunks for extreme speed
+
+            // --- CRYPTOGRAPHY ENGINE (Hardware Accelerated) ---
+            async function deriveKey(password, salt) {
+                const enc = new TextEncoder();
+                const keyMaterial = await window.crypto.subtle.importKey(
+                    "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveBits", "deriveKey"]
+                );
+                return await window.crypto.subtle.deriveKey(
+                    { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                    keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
+                );
+            }
+
+            // --- PEERJS INITIALIZATION ---
+            peer = new Peer();
+
+            peer.on('open', (id) => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const targetId = urlParams.get('connect');
+
+                if (targetId) {
+                    statusEl.textContent = "Connecting to Sender...";
+                    qrArea.style.display = 'none';
+                    connectToPeer(targetId);
+                } else {
+                    statusEl.textContent = "Ready. Scan QR to connect.";
+                    const secretUrl = `${window.location.origin}${window.location.pathname}?connect=${id}`;
+                    new QRCode(document.getElementById("qrcode"), { text: secretUrl, width: 200, height: 200 });
+                }
+            });
+
+            peer.on('connection', (conn) => {
+                if(confirm("Device wants to connect. Allow?")) {
+                    setupConnection(conn);
+                } else {
+                    conn.close();
+                }
+            });
+
+            function connectToPeer(targetId) {
+                const conn = peer.connect(targetId, { reliable: true });
+                setupConnection(conn);
+            }
+
+            // --- CONNECTION LOGIC ---
+            function setupConnection(conn) {
+                currentConn = conn;
+                
+                conn.on('open', () => {
+                    statusEl.textContent = "Connected securely.";
+                    qrArea.style.display = 'none';
+                    transferArea.style.display = 'block';
+                });
+
+                let receivedBuffers = [];
+                let fileMeta = null;
+                let aesKey = null;
+
+                conn.on('data', async (data) => {
+                    if (data.type === 'meta') {
+                        fileMeta = data;
+                        receivedBuffers = [];
+                        progressBar.style.display = 'block';
+                        progressBar.value = 0;
+                        progressText.textContent = `Preparing to receive...`;
+                        
+                        const password = passInput.value.trim();
+                        if (!password) { alert("Enter password to receive!"); return; }
+                        
+                        // Receiver generates same key using Sender's salt
+                        aesKey = await deriveKey(password, new Uint8Array(data.salt));
+
+                    } else if (data.type === 'chunk') {
+                        try {
+                            // Hardware Decryption
+                            const decryptedChunk = await window.crypto.subtle.decrypt(
+                                { name: "AES-GCM", iv: new Uint8Array(data.iv) },
+                                aesKey,
+                                data.chunk
+                            );
+                            receivedBuffers.push(decryptedChunk);
+                            
+                            // Update UI
+                            let percent = Math.round((data.offset / fileMeta.size) * 100);
+                            progressBar.value = percent;
+                            progressText.textContent = `Receiving & Decrypting: ${percent}%`;
+
+                        } catch (e) {
+                            console.error("Decryption error", e);
+                            progressText.textContent = "Decryption Failed! Wrong Password?";
+                            conn.close();
+                        }
+
+                    } else if (data.type === 'end') {
+                        progressText.textContent = "Merging file...";
+                        const blob = new Blob(receivedBuffers, { type: fileMeta.fileType });
+                        const url = URL.createObjectURL(blob);
+                        
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = fileMeta.name;
+                        a.click();
+                        
+                        receivedBuffers = []; // Free RAM
+                        progressText.textContent = "File Saved Successfully! 🎉";
+                    }
+                });
+            }
+
+            // --- SENDING LOGIC (Streaming & Encrypting) ---
+            sendBtn.addEventListener('click', async () => {
+                const file = fileInput.files[0];
+                const password = passInput.value.trim();
+
+                if (!file) { alert("Select a file!"); return; }
+                if (!password) { alert("Enter encryption password!"); return; }
+                if (!currentConn || !currentConn.open) { alert("Not connected!"); return; }
+
+                sendBtn.disabled = true;
+                progressBar.style.display = 'block';
+                progressBar.value = 0;
+
+                // 1. Generate Salt & Key
+                const salt = window.crypto.getRandomValues(new Uint8Array(16));
+                const key = await deriveKey(password, salt);
+
+                // 2. Send Metadata
+                currentConn.send({
+                    type: 'meta',
+                    name: file.name,
+                    size: file.size,
+                    fileType: file.type,
+                    salt: Array.from(salt) // Convert TypedArray to normal Array for WebRTC
+                });
+
+                // 3. Read & Encrypt in Chunks
+                let offset = 0;
+                const reader = new FileReader();
+
+                reader.onload = async (e) => {
+                    const chunkBuffer = e.target.result;
+                    
+                    // Generate unique IV for each chunk
+                    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+                    
+                    // Hardware Encryption
+                    const encryptedChunk = await window.crypto.subtle.encrypt(
+                        { name: "AES-GCM", iv: iv },
+                        key,
+                        chunkBuffer
+                    );
+
+                    offset += chunkBuffer.byteLength;
+                    
+                    // Send Binary Data Directly
+                    currentConn.send({
+                        type: 'chunk',
+                        iv: Array.from(iv),
+                        chunk: encryptedChunk,
+                        offset: offset
+                    });
+
+                    let percent = Math.round((offset / file.size) * 100);
+                    progressBar.value = percent;
+                    progressText.textContent = `Encrypting & Sending: ${percent}%`;
+
+                    if (offset < file.size) {
+                        readNextChunk(); // Continue reading next part
+                    } else {
+                        currentConn.send({ type: 'end' });
+                        progressText.textContent = "Transfer Complete! 🚀";
+                        sendBtn.disabled = false;
+                    }
+                };
+
+                function readNextChunk() {
+                    const slice = file.slice(offset, offset + CHUNK_SIZE);
+                    reader.readAsArrayBuffer(slice); // Read as raw binary!
+                }
+
+                readNextChunk(); // Start the loop
+            });
+        });
+    </script>
+</body>
+</html>
