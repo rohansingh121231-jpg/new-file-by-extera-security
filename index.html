@@ -202,18 +202,9 @@
         }
 
         @keyframes glowing {
-            0% {
-                filter: blur(5px);
-                opacity: 0.6;
-            }
-            50% {
-                filter: blur(8px);
-                opacity: 0.9;
-            }
-            100% {
-                filter: blur(5px);
-                opacity: 0.6;
-            }
+            0% { filter: blur(5px); opacity: 0.6; }
+            50% { filter: blur(8px); opacity: 0.9; }
+            100% { filter: blur(5px); opacity: 0.6; }
         }
 
         .crypto-input {
@@ -234,704 +225,189 @@
             box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.2);
         }
 
-        #file-input {
-            display: none;
-        }
+        #file-input { display: none; }
 
         #transfer-list {
-            flex-grow: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding-right: 5px;
-            min-height: 0;
+            flex-grow: 1; overflow-y: auto; display: flex;
+            flex-direction: column; gap: 8px; padding-right: 5px; min-height: 0;
         }
 
         .transfer-item {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #eee;
-            position: relative;
-            font-size: 13px;
-            flex-shrink: 0;
+            background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #eee;
+            position: relative; font-size: 13px; flex-shrink: 0;
         }
 
-        .t-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-
-        .t-name {
-            font-weight: 600;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 160px;
-        }
-
-        .t-bar-bg {
-            height: 6px;
-            background: #ddd;
-            border-radius: 3px;
-            overflow: hidden;
-        }
-
-        .t-bar-fill {
-            height: 100%;
-            background: var(--green);
-            width: 0%;
-            transition: width 0.2s;
-        }
-
-        .t-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            color: #666;
-            margin-top: 4px;
-            align-items: center;
-        }
+        .t-info { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .t-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+        .t-bar-bg { height: 6px; background: #ddd; border-radius: 3px; overflow: hidden; }
+        .t-bar-fill { height: 100%; background: var(--green); width: 0%; transition: width 0.2s; }
+        .t-meta { display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-top: 4px; align-items: center; }
 
         .btn-cancel {
-            background: transparent;
-            color: var(--red);
-            border: none;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            line-height: 1;
+            background: transparent; color: var(--red); border: none; font-size: 16px;
+            font-weight: bold; cursor: pointer; line-height: 1;
         }
 
         /* Accept File Button Style */
         .btn-accept-file {
-            background: var(--secondary);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: 0.2s;
+            background: var(--secondary); color: white; border: none; padding: 6px 12px;
+            border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); transition: 0.2s;
         }
 
-        .btn-accept-file:active {
-            transform: scale(0.95);
-        }
+        .btn-accept-file:active { transform: scale(0.95); }
 
         /* CHAT SECTION */
         .chat-area {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
+            flex-grow: 1; display: flex; flex-direction: column;
             background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
-            background-color: #e5ddd5;
-            position: relative;
+            background-color: #e5ddd5; position: relative;
         }
 
         .chat-header {
-            padding: 10px 15px;
-            background: #f0f2f5;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 60px;
-            flex-shrink: 0;
+            padding: 10px 15px; background: #f0f2f5; border-bottom: 1px solid #ddd;
+            display: flex; justify-content: space-between; align-items: center; height: 60px; flex-shrink: 0;
         }
 
-        .chat-user {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .chat-user { display: flex; align-items: center; gap: 10px; }
 
         .sound-toggle-btn {
-            width: 40px;
-            height: 40px;
-            background: #ffffff;
-            border: 1px solid #ddd;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 18px;
-            transition: 0.2s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            width: 40px; height: 40px; background: #ffffff; border: 1px solid #ddd;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 18px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
-        .sound-toggle-btn:active {
-            transform: scale(0.9);
-        }
-
-        .sound-mode-ring {
-            color: var(--primary);
-        }
-
-        .sound-mode-vibrate {
-            color: #ff9800;
-        }
-
-        .sound-mode-silent {
-            color: #999;
-            text-decoration: line-through;
-        }
-
-        .chat-actions {
-            display: flex;
-            gap: 15px;
-        }
-
-        .icon-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--primary);
-            font-size: 20px;
-            padding: 5px;
-        }
+        .sound-toggle-btn:active { transform: scale(0.9); }
+        .sound-mode-ring { color: var(--primary); }
+        .sound-mode-vibrate { color: #ff9800; }
+        .sound-mode-silent { color: #999; text-decoration: line-through; }
+        .chat-actions { display: flex; gap: 15px; }
+        .icon-btn { background: none; border: none; cursor: pointer; color: var(--primary); font-size: 20px; padding: 5px; }
 
         .messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            -webkit-overflow-scrolling: touch;
+            flex-grow: 1; overflow-y: auto; padding: 20px; display: flex;
+            flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch;
         }
 
         .msg {
-            max-width: 75%;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            position: relative;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-            word-break: break-word;
+            max-width: 75%; padding: 8px 12px; border-radius: 8px; font-size: 14px;
+            position: relative; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); word-break: break-word;
         }
 
-        .msg.sent {
-            align-self: flex-end;
-            background: var(--light);
-            border-top-right-radius: 0;
-        }
-
-        .msg.received {
-            align-self: flex-start;
-            background: white;
-            border-top-left-radius: 0;
-        }
-
-        .msg-time {
-            font-size: 10px;
-            color: #999;
-            float: right;
-            margin-top: 5px;
-            margin-left: 10px;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .double-tick {
-            color: #4fc3f7;
-            font-weight: bold;
-            font-size: 10px;
-        }
-
-        .msg img {
-            max-width: 100%;
-            border-radius: 6px;
-            cursor: pointer;
-            display: block;
-        }
+        .msg.sent { align-self: flex-end; background: var(--light); border-top-right-radius: 0; }
+        .msg.received { align-self: flex-start; background: white; border-top-left-radius: 0; }
+        .msg-time { font-size: 10px; color: #999; float: right; margin-top: 5px; margin-left: 10px; display: flex; align-items: center; gap: 3px; }
+        .double-tick { color: #4fc3f7; font-weight: bold; font-size: 10px; }
+        .msg img { max-width: 100%; border-radius: 6px; cursor: pointer; display: block; }
 
         .reply-bar {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 5px 15px;
-            border-left: 5px solid var(--secondary);
-            display: none;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #555;
-            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.9); padding: 5px 15px; border-left: 5px solid var(--secondary);
+            display: none; justify-content: space-between; font-size: 12px; color: #555; flex-shrink: 0;
         }
 
         .msg-reply-preview {
-            background: rgba(0, 0, 0, 0.05);
-            padding: 4px;
-            border-left: 3px solid var(--secondary);
-            margin-bottom: 4px;
-            border-radius: 4px;
-            font-size: 11px;
+            background: rgba(0, 0, 0, 0.05); padding: 4px; border-left: 3px solid var(--secondary);
+            margin-bottom: 4px; border-radius: 4px; font-size: 11px;
         }
 
         .reply-btn {
-            position: absolute;
-            top: 5px;
-            right: -25px;
-            background: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
+            position: absolute; top: 5px; right: -25px; background: white; border-radius: 50%;
+            width: 20px; height: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); cursor: pointer;
+            display: none; align-items: center; justify-content: center; font-size: 12px;
         }
 
-        .msg:hover .reply-btn {
-            display: flex;
-        }
+        .msg:hover .reply-btn { display: flex; }
 
         .input-area {
-            padding: 10px;
-            background: #f0f2f5;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-            width: 100%;
-            box-sizing: border-box;
+            padding: 10px; background: #f0f2f5; display: flex; align-items: center;
+            gap: 8px; flex-shrink: 0; width: 100%; box-sizing: border-box;
         }
 
-        #msg-input {
-            flex-grow: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 20px;
-            outline: none;
-            font-size: 15px;
-            min-width: 0;
-        }
-
+        #msg-input { flex-grow: 1; padding: 12px; border: none; border-radius: 20px; outline: none; font-size: 15px; min-width: 0; }
         .send-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            margin-right: 2px;
+            background: var(--primary); color: white; border: none; width: 40px; height: 40px;
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; margin-right: 2px;
         }
 
-        .typing-indicator {
-            font-size: 11px;
-            color: var(--secondary);
-            font-weight: bold;
-            animation: flash 1.5s infinite;
-            display: none;
-        }
-
-        @keyframes flash {
-            0% { opacity: 0.3; }
-            50% { opacity: 1; }
-            100% { opacity: 0.3; }
-        }
-
-        .mobile-only {
-            display: none;
-        }
+        .typing-indicator { font-size: 11px; color: var(--secondary); font-weight: bold; animation: flash 1.5s infinite; display: none; }
+        @keyframes flash { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
+        .mobile-only { display: none; }
 
         /* OVERLAYS AND MODALS */
         .fullscreen-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2000;
-            background: rgba(0, 0, 0, 0.9);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: white;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000;
+            background: rgba(0, 0, 0, 0.9); display: none; flex-direction: column;
+            align-items: center; justify-content: center; color: white;
         }
 
-        .call-card {
-            background: #1f2c34;
-            padding: 40px;
-            border-radius: 20px;
-            text-align: center;
-            width: 300px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
+        .call-card { background: #1f2c34; padding: 40px; border-radius: 20px; text-align: center; width: 300px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+        .call-avatar-lg { width: 100px; height: 100px; background: #ddd; border-radius: 50%; margin: 0 auto 20px; overflow: hidden; }
+        .call-actions { display: flex; justify-content: space-around; margin-top: 40px; }
+        .call-btn { width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); transition: transform 0.2s; }
+        .btn-accept { background: var(--green); color: white; animation: pulse 1.5s infinite; }
+        .btn-reject { background: var(--red); color: white; }
 
-        .call-avatar-lg {
-            width: 100px;
-            height: 100px;
-            background: #ddd;
-            border-radius: 50%;
-            margin: 0 auto 20px;
-            overflow: hidden;
-        }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); } 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } }
 
-        .call-actions {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 40px;
-        }
-
-        .call-btn {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            transition: transform 0.2s;
-        }
-
-        .btn-accept {
-            background: var(--green);
-            color: white;
-            animation: pulse 1.5s infinite;
-        }
-
-        .btn-reject {
-            background: var(--red);
-            color: white;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
-        }
-
-        .active-call-ui {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
-
-        #remote-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        #local-video {
-            position: absolute;
-            bottom: 100px;
-            right: 20px;
-            width: 120px;
-            height: 160px;
-            background: #333;
-            border-radius: 10px;
-            border: 2px solid white;
-            object-fit: cover;
-        }
-
-        .call-controls-bar {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.6);
-            padding: 15px 30px;
-            border-radius: 30px;
-            display: flex;
-            gap: 20px;
-        }
-
-        .control-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border: none;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .control-btn.off {
-            background: white;
-            color: black;
-        }
-
-        .btn-hangup {
-            background: var(--red);
-        }
+        .active-call-ui { width: 100%; height: 100%; position: relative; display: flex; flex-direction: column; }
+        #remote-video { width: 100%; height: 100%; object-fit: cover; }
+        #local-video { position: absolute; bottom: 100px; right: 20px; width: 120px; height: 160px; background: #333; border-radius: 10px; border: 2px solid white; object-fit: cover; }
+        .call-controls-bar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.6); padding: 15px 30px; border-radius: 30px; display: flex; gap: 20px; }
+        .control-btn { width: 50px; height: 50px; border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.2); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .control-btn.off { background: white; color: black; }
+        .btn-hangup { background: var(--red); }
 
         .connection-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            backdrop-filter: blur(10px);
-            flex-direction: column;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85);
+            display: none; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(10px); flex-direction: column;
         }
 
-        .lock-svg {
-            width: 120px;
-            height: 120px;
-        }
+        .lock-svg { width: 120px; height: 120px; }
+        .lock-body { fill: #4285f4; animation: lockBody 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .lock-shackle { fill: none; stroke: #4285f4; stroke-width: 5; stroke-linecap: round; transform-origin: 50% 35%; animation: lockShackle 0.6s ease forwards 0.4s; }
+        .checkmark { fill: none; stroke: #34a853; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: checkDraw 0.5s ease forwards 1s; }
 
-        .lock-body {
-            fill: #4285f4;
-            animation: lockBody 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-
-        .lock-shackle {
-            fill: none;
-            stroke: #4285f4;
-            stroke-width: 5;
-            stroke-linecap: round;
-            transform-origin: 50% 35%;
-            animation: lockShackle 0.6s ease forwards 0.4s;
-        }
-
-        .checkmark {
-            fill: none;
-            stroke: #34a853;
-            stroke-width: 5;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            stroke-dasharray: 100;
-            stroke-dashoffset: 100;
-            animation: checkDraw 0.5s ease forwards 1s;
-        }
-
-        @keyframes lockBody {
-            from { transform: scale(0.5); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        @keyframes lockShackle {
-            0% { transform: translateY(-15px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-        }
-
-        @keyframes checkDraw {
-            to { stroke-dashoffset: 0; }
-        }
+        @keyframes lockBody { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes lockShackle { 0% { transform: translateY(-15px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        @keyframes checkDraw { to { stroke-dashoffset: 0; } }
 
         /* PERMISSION AND AUTH MODALS */
         .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 6000;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9);
+            z-index: 6000; display: none; justify-content: center; align-items: center; padding: 20px;
         }
 
         .perm-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            max-width: 380px;
-            width: 100%;
-            text-align: center;
-            animation: slideUp 0.3s ease-out;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            background: white; border-radius: 15px; padding: 30px; max-width: 380px; width: 100%;
+            text-align: center; animation: slideUp 0.3s ease-out; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
-        @keyframes slideUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .perm-icon { font-size: 45px; margin-bottom: 10px; }
+        .perm-step { display: flex; align-items: center; gap: 10px; text-align: left; margin-bottom: 10px; font-size: 14px; color: #333; background: #f5f5f5; padding: 10px; border-radius: 8px; }
+        .perm-step span { background: var(--primary); color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+        .btn-perm-ok { background: var(--primary); color: white; width: 100%; padding: 14px; border: none; border-radius: 8px; margin-top: 10px; cursor: pointer; font-weight: bold; font-size: 16px; }
 
-        .perm-icon {
-            font-size: 45px;
-            margin-bottom: 10px;
-        }
+        .modal-img-container img { max-width: 95vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
+        .modal-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; background: rgba(0, 0, 0, 0.5); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .modal-dl { position: absolute; bottom: 30px; background: white; color: black; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; }
 
-        .perm-step {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-align: left;
-            margin-bottom: 10px;
-            font-size: 14px;
-            color: #333;
-            background: #f5f5f5;
-            padding: 10px;
-            border-radius: 8px;
-        }
-
-        .perm-step span {
-            background: var(--primary);
-            color: white;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            flex-shrink: 0;
-        }
-
-        .btn-perm-ok {
-            background: var(--primary);
-            color: white;
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            margin-top: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 16px;
-        }
-
-        .modal-img-container img {
-            max-width: 95vw;
-            max-height: 90vh;
-            border-radius: 8px;
-            object-fit: contain;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            color: white;
-            font-size: 30px;
-            cursor: pointer;
-            background: rgba(0, 0, 0, 0.5);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-dl {
-            position: absolute;
-            bottom: 30px;
-            background: white;
-            color: black;
-            padding: 10px 20px;
-            border-radius: 20px;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        #scanner-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: black;
-            z-index: 4000;
-            display: none;
-            flex-direction: column;
-        }
-
-        #qr-reader {
-            flex-grow: 1;
-        }
-
-        .scanner-close {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            color: white;
-            z-index: 4001;
-            font-size: 30px;
-            cursor: pointer;
-        }
+        #scanner-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 4000; display: none; flex-direction: column; }
+        #qr-reader { flex-grow: 1; }
+        .scanner-close { position: absolute; top: 20px; right: 20px; color: white; z-index: 4001; font-size: 30px; cursor: pointer; }
 
         @media (max-width: 768px) {
-            .app-container {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .sidebar {
-                width: 100%;
-                height: 100%;
-                position: absolute;
-                top: 0;
-                left: 0;
-                transform: translateX(0);
-            }
-
-            .sidebar.hidden {
-                transform: translateX(-100%);
-            }
-
-            .chat-area {
-                width: 100%;
-                height: 100%;
-                position: absolute;
-                top: 0;
-                left: 0;
-                z-index: 50;
-            }
-
-            .mobile-only {
-                display: inline-block;
-            }
-
-            .files-panel {
-                max-height: none;
-            }
-
-            .header {
-                padding-right: 10px;
-            }
-
-            .btn-close-sidebar {
-                background: none;
-                border: none;
-                color: white;
-                font-size: 20px;
-                cursor: pointer;
-                margin-right: 10px;
-            }
-
-            #local-video {
-                width: 90px;
-                height: 120px;
-                bottom: 120px;
-                right: 10px;
-            }
-
-            .input-area {
-                padding: 8px;
-                gap: 6px;
-            }
+            .app-container { flex-direction: column; width: 100%; }
+            .sidebar { width: 100%; height: 100%; position: absolute; top: 0; left: 0; transform: translateX(0); }
+            .sidebar.hidden { transform: translateX(-100%); }
+            .chat-area { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 50; }
+            .mobile-only { display: inline-block; }
+            .files-panel { max-height: none; }
+            .header { padding-right: 10px; }
+            .btn-close-sidebar { background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 10px; }
+            #local-video { width: 90px; height: 120px; bottom: 120px; right: 10px; }
+            .input-area { padding: 8px; gap: 6px; }
         }
     </style>
 </head>
@@ -1516,7 +992,7 @@
             scrollToBottom();
         }
 
-        // --- FIX 1: HANG-FREE DIRECT-TO-DISK FILE TRANSFER ---
+        // --- FIX 2: HANG-FREE DIRECT-TO-DISK FILE TRANSFER ---
         document.getElementById('file-input').onchange = function () {
             for (let f of this.files) {
                 const id = Date.now() + Math.random().toString(36).substr(2, 5);
@@ -1552,7 +1028,8 @@
             }
         }
 
-        async function startSendingActiveTransfer(fileId) {
+        // Yeh loop ab asynchronous FileReader use karta hai (Browser Hang Issue Fixed)
+        function startSendingActiveTransfer(fileId) {
             if (!activeTransfer || activeTransfer.id !== fileId || !conn || !conn.open || !globalAesKey) return;
 
             document.getElementById(`eta-${fileId}`).innerText = 'Bhej raha hai...';
@@ -1561,45 +1038,52 @@
             let offset = 0;
             let start = Date.now();
             const CHUNK_SIZE = 256 * 1024;
-            const MAX_BUFFER = 8 * 1024 * 1024; // 8MB limit to be extremely safe on memory
+            const MAX_BUFFER = 8 * 1024 * 1024; // 8MB limit
+            const reader = new FileReader();
 
-            try {
-                while (offset < item.file.size) {
-                    if (!activeTransfer || activeTransfer.id !== item.id) break;
+            reader.onload = async (e) => {
+                if (!activeTransfer || activeTransfer.id !== item.id) return;
+                const chunkBuffer = e.target.result;
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
 
-                    // AWAIT AND YIELD: The absolute cure for browser freezing
-                    while (conn.dataChannel && conn.dataChannel.bufferedAmount > MAX_BUFFER) {
-                        await new Promise(resolve => setTimeout(resolve, 50));
-                    }
-
-                    // Use modern ArrayBuffer slice instead of FileReader events
-                    const slice = item.file.slice(offset, offset + CHUNK_SIZE);
-                    const chunkBuffer = await slice.arrayBuffer();
-                    const iv = window.crypto.getRandomValues(new Uint8Array(12));
-
+                try {
                     const encryptedChunk = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, globalAesKey, chunkBuffer);
                     offset += chunkBuffer.byteLength;
 
                     if (conn && conn.open) {
-                        conn.send({ type: 'file-chunk', fileId: item.id, iv: iv, data: encryptedChunk, offset: offset });
+                        conn.send({ type: 'file-chunk', fileId: item.id, iv: Array.from(iv), data: encryptedChunk, offset: offset });
                         updateProgress(item.id, offset, item.file.size, start);
 
-                        // Give Chrome 1 millisecond to breathe and update UI (0% Freeze)
-                        await new Promise(resolve => setTimeout(resolve, 1));
+                        if (offset < item.file.size) {
+                            checkBufferAndReadNext();
+                        } else {
+                            isTransferring = false;
+                            setTimeout(processFileQueue, 50);
+                        }
                     } else {
-                        break;
+                        isTransferring = false;
                     }
-                }
-                if (offset >= item.file.size) {
+                } catch (err) {
+                    console.error("Encryption failed", err);
                     isTransferring = false;
-                    setTimeout(processFileQueue, 50);
+                }
+            };
+
+            function checkBufferAndReadNext() {
+                if (!activeTransfer || activeTransfer.id !== item.id) return;
+                
+                if (conn.dataChannel && conn.dataChannel.bufferedAmount > MAX_BUFFER) {
+                    setTimeout(checkBufferAndReadNext, 50);
                 } else {
-                    isTransferring = false;
+                    // Ye setTimeout browser ko saans lene ka time deta hai
+                    setTimeout(() => {
+                        if (!activeTransfer || activeTransfer.id !== item.id) return;
+                        const slice = item.file.slice(offset, offset + CHUNK_SIZE);
+                        reader.readAsArrayBuffer(slice);
+                    }, 0);
                 }
-            } catch (err) {
-                console.error("Encryption Loop failed", err);
-                isTransferring = false;
             }
+            checkBufferAndReadNext();
         }
 
         let receiving = {};
@@ -1613,23 +1097,40 @@
             }
         }
 
+        // FIX 1: Mobile par Save button kaam nahi kar raha tha
         async function acceptFileTransfer(fileId) {
             const f = receiving[fileId];
             if (!f) return;
 
-            try {
-                if (window.showSaveFilePicker) {
-                    const handle = await window.showSaveFilePicker({ suggestedName: f.name });
-                    f.stream = await handle.createWritable();
-                    f.useDisk = true;
-                } else {
-                    f.useDisk = false;
-                    f.buffer = [];
-                }
-            } catch (err) { return; }
+            const etaEl = document.getElementById(`eta-${fileId}`);
+            if (etaEl) etaEl.innerText = 'Jod raha hai...';
 
+            let useDisk = false;
+            let stream = null;
+
+            // Check if device is mobile. Mobile browsers fail silently on showSaveFilePicker.
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+            if (!isMobile && window.showSaveFilePicker) {
+                try {
+                    const handle = await window.showSaveFilePicker({ suggestedName: f.name });
+                    stream = await handle.createWritable();
+                    useDisk = true;
+                } catch (err) {
+                    if (err.name === 'AbortError') {
+                        // User ne cancel daba diya
+                        if (etaEl) etaEl.innerHTML = `<button class="btn-accept-file" onclick="acceptFileTransfer('${fileId}')">📥 Save Karein</button>`;
+                        return;
+                    }
+                    console.warn("Disk API failed, falling back to RAM", err);
+                }
+            }
+
+            f.useDisk = useDisk;
+            f.stream = stream;
+            f.buffer = [];
             f.start = Date.now();
-            document.getElementById(`eta-${fileId}`).innerText = 'Jod raha hai...';
+            
             if (conn && conn.open) conn.send({ type: 'file-accept', fileId: fileId });
         }
 
