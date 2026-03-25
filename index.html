@@ -11,141 +11,933 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
-        :root { --primary: #075e54; --secondary: #128c7e; --light: #dcf8c6; --dark: #1f2c34; --bg: #e5ddd5; --white: #ffffff; --red: #d32f2f; --green: #25d366; }
-        body { background: var(--bg); height: 100dvh; display: flex; justify-content: center; overflow: hidden; }
-        .app-container { width: 100%; max-width: 1000px; height: 100%; background: var(--white); display: flex; box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); position: relative; }
-        
-        .sidebar { width: 350px; border-right: 1px solid #ddd; display: flex; flex-direction: column; background: #f0f2f5; transition: transform 0.3s ease; z-index: 100; }
-        .header { padding: 15px; background: var(--primary); color: white; display: flex; justify-content: space-between; align-items: center; height: 60px; flex-shrink: 0; }
-        .status-badge { font-size: 12px; background: rgba(255, 255, 255, 0.2); padding: 4px 8px; border-radius: 12px; }
-        .connect-panel { padding: 20px; text-align: center; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
-        #qrcode { background: white; padding: 10px; display: inline-block; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-        #qrcode img, #qrcode canvas { display: block; max-width: 100%; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 8px; margin: 5px; transition: 0.2s; }
-        .btn-primary { background: var(--secondary); color: white; }
-        .btn-outline { border: 1px solid var(--secondary); color: var(--secondary); background: transparent; }
-        .btn:active { transform: scale(0.98); }
+        :root {
+            --primary: #075e54;
+            --secondary: #128c7e;
+            --light: #dcf8c6;
+            --dark: #1f2c34;
+            --bg: #e5ddd5;
+            --white: #ffffff;
+            --red: #d32f2f;
+            --green: #25d366;
+        }
 
-        .files-panel { padding: 15px; background: white; border-top: 1px solid #ddd; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; max-height: 50%; }
-        .files-header { display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; align-items: center; flex-shrink: 0; }
-        
-        .magic-btn-small { position: relative; padding: 8px 15px; border-radius: 8px; background: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 13px; color: #333; transform-style: preserve-3d; transition: transform 0.1s; z-index: 1; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
-        .magic-btn-small:active { transform: scale(0.95); }
-        .magic-btn-small::before { content: ""; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; background: linear-gradient(45deg, #4285f4, #db4437, #f4b400, #0f9d58); z-index: -1; border-radius: 10px; filter: blur(6px); opacity: 0.8; animation: glowing 3s linear infinite; }
-        .magic-btn-small::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; border-radius: 8px; z-index: -1; }
-        @keyframes glowing { 0% { filter: blur(5px); opacity: 0.6; } 50% { filter: blur(8px); opacity: 0.9; } 100% { filter: blur(5px); opacity: 0.6; } }
+        body {
+            background: var(--bg);
+            height: 100dvh;
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+        }
 
-        .crypto-input { width: 100%; padding: 12px 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; transition: 0.2s; background: #f8f9fa; margin-bottom: 15px; }
-        .crypto-input:focus { border-color: var(--secondary); background: white; box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.2); }
+        .app-container {
+            width: 100%;
+            max-width: 1000px;
+            height: 100%;
+            background: var(--white);
+            display: flex;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
 
-        #file-input { display: none; }
-        #transfer-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 5px; min-height: 0; }
-        .transfer-item { background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #eee; position: relative; font-size: 13px; flex-shrink: 0; }
-        .t-info { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .t-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
-        .t-bar-bg { height: 6px; background: #ddd; border-radius: 3px; overflow: hidden; }
-        .t-bar-fill { height: 100%; background: var(--green); width: 0%; transition: width 0.2s; }
-        .t-meta { display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-top: 4px; align-items: center;}
-        
-        .btn-cancel { background: transparent; color: var(--red); border: none; font-size: 16px; font-weight: bold; cursor: pointer; line-height: 1; }
-        .btn-accept-file { background: var(--secondary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: 0.2s; }
-        .btn-accept-file:active { transform: scale(0.95); }
+        /* SIDEBAR */
+        .sidebar {
+            width: 350px;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            background: #f0f2f5;
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
 
-        .chat-area { flex-grow: 1; display: flex; flex-direction: column; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-color: #e5ddd5; position: relative; }
-        .chat-header { padding: 10px 15px; background: #f0f2f5; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; height: 60px; flex-shrink: 0; }
-        .chat-user { display: flex; align-items: center; gap: 10px; }
-        .sound-toggle-btn { width: 40px; height: 40px; background: #ffffff; border: 1px solid #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); }
-        .sound-toggle-btn:active { transform: scale(0.9); }
-        .sound-mode-ring { color: var(--primary); }
-        .sound-mode-vibrate { color: #ff9800; }
-        .sound-mode-silent { color: #999; text-decoration: line-through; }
-        .chat-actions { display: flex; gap: 15px; }
-        .icon-btn { background: none; border: none; cursor: pointer; color: var(--primary); font-size: 20px; padding: 5px; }
+        .header {
+            padding: 15px;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+            flex-shrink: 0;
+        }
 
-        .messages { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
-        .msg { max-width: 75%; padding: 8px 12px; border-radius: 8px; font-size: 14px; position: relative; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); word-break: break-word; }
-        .msg.sent { align-self: flex-end; background: var(--light); border-top-right-radius: 0; }
-        .msg.received { align-self: flex-start; background: white; border-top-left-radius: 0; }
-        .msg-time { font-size: 10px; color: #999; float: right; margin-top: 5px; margin-left: 10px; display: flex; align-items: center; gap: 3px; }
-        .double-tick { color: #4fc3f7; font-weight: bold; font-size: 10px; }
-        .msg img { max-width: 100%; border-radius: 6px; cursor: pointer; display: block; }
+        .status-badge {
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
 
-        .reply-bar { background: rgba(255, 255, 255, 0.9); padding: 5px 15px; border-left: 5px solid var(--secondary); display: none; justify-content: space-between; font-size: 12px; color: #555; flex-shrink: 0; }
-        .msg-reply-preview { background: rgba(0, 0, 0, 0.05); padding: 4px; border-left: 3px solid var(--secondary); margin-bottom: 4px; border-radius: 4px; font-size: 11px; }
-        .reply-btn { position: absolute; top: 5px; right: -25px; background: white; border-radius: 50%; width: 20px; height: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 12px; }
-        .msg:hover .reply-btn { display: flex; }
+        .connect-panel {
+            padding: 20px;
+            text-align: center;
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-        .input-area { padding: 10px; background: #f0f2f5; display: flex; align-items: center; gap: 8px; flex-shrink: 0; width: 100%; box-sizing: border-box; }
-        #msg-input { flex-grow: 1; padding: 12px; border: none; border-radius: 20px; outline: none; font-size: 15px; min-width: 0; }
-        .send-btn { background: var(--primary); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 2px; }
+        #qrcode {
+            background: white;
+            padding: 10px;
+            display: inline-block;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
 
-        .typing-indicator { font-size: 11px; color: var(--secondary); font-weight: bold; animation: flash 1.5s infinite; display: none; }
-        @keyframes flash { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
-        .mobile-only { display: none; }
+        #qrcode img,
+        #qrcode canvas {
+            display: block;
+            max-width: 100%;
+        }
 
-        .fullscreen-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: rgba(0, 0, 0, 0.9); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
-        .call-card { background: #1f2c34; padding: 40px; border-radius: 20px; text-align: center; width: 300px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
-        .call-avatar-lg { width: 100px; height: 100px; background: #ddd; border-radius: 50%; margin: 0 auto 20px; overflow: hidden; }
-        .call-actions { display: flex; justify-content: space-around; margin-top: 40px; }
-        .call-btn { width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); transition: transform 0.2s; }
-        .btn-accept { background: var(--green); color: white; animation: pulse 1.5s infinite; }
-        .btn-reject { background: var(--red); color: white; }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 5px;
+            transition: 0.2s;
+        }
 
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); } 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } }
+        .btn-primary {
+            background: var(--secondary);
+            color: white;
+        }
 
-        .active-call-ui { width: 100%; height: 100%; position: relative; display: flex; flex-direction: column; }
-        #remote-video { width: 100%; height: 100%; object-fit: cover; }
-        #local-video { position: absolute; bottom: 100px; right: 20px; width: 120px; height: 160px; background: #333; border-radius: 10px; border: 2px solid white; object-fit: cover; }
-        .call-controls-bar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.6); padding: 15px 30px; border-radius: 30px; display: flex; gap: 20px; }
-        .control-btn { width: 50px; height: 50px; border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.2); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-        .control-btn.off { background: white; color: black; }
-        .btn-hangup { background: var(--red); }
+        .btn-outline {
+            border: 1px solid var(--secondary);
+            color: var(--secondary);
+            background: transparent;
+        }
 
-        .connection-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: none; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(10px); flex-direction: column; }
-        .lock-svg { width: 120px; height: 120px; }
-        .lock-body { fill: #4285f4; animation: lockBody 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        .lock-shackle { fill: none; stroke: #4285f4; stroke-width: 5; stroke-linecap: round; transform-origin: 50% 35%; animation: lockShackle 0.6s ease forwards 0.4s; }
-        .checkmark { fill: none; stroke: #34a853; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: checkDraw 0.5s ease forwards 1s; }
+        .btn:active {
+            transform: scale(0.98);
+        }
 
-        @keyframes lockBody { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes lockShackle { 0% { transform: translateY(-15px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
-        @keyframes checkDraw { to { stroke-dashoffset: 0; } }
+        /* FILE TRANSFER SECTION */
+        .files-panel {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            min-height: 0;
+            max-height: 50%;
+        }
 
-        /* ALL MODALS */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 6000; display: none; justify-content: center; align-items: center; padding: 20px; }
-        .perm-card { background: white; border-radius: 15px; padding: 30px; max-width: 380px; width: 100%; text-align: center; animation: slideUp 0.3s ease-out; box-shadow: 0 10px 40px rgba(0,0,0,0.5);}
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .perm-icon { font-size: 45px; margin-bottom: 10px; }
-        .perm-step { display: flex; align-items: center; gap: 10px; text-align: left; margin-bottom: 10px; font-size: 14px; color: #333; background: #f5f5f5; padding: 10px; border-radius: 8px; }
-        .perm-step span { background: var(--primary); color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
-        .btn-perm-ok { background: var(--primary); color: white; width: 100%; padding: 14px; border: none; border-radius: 8px; margin-top: 10px; cursor: pointer; font-weight: bold; font-size: 16px;}
+        .files-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-weight: bold;
+            align-items: center;
+            flex-shrink: 0;
+        }
 
-        .modal-img-container img { max-width: 95vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
-        .modal-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; background: rgba(0, 0, 0, 0.5); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        .modal-dl { position: absolute; bottom: 30px; background: white; color: black; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; }
+        .magic-btn-small {
+            position: relative;
+            padding: 8px 15px;
+            border-radius: 8px;
+            background: #ffffff;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            font-size: 13px;
+            color: #333;
+            transform-style: preserve-3d;
+            transition: transform 0.1s;
+            z-index: 1;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
 
-        #scanner-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 4000; display: none; flex-direction: column; }
-        #qr-reader { flex-grow: 1; }
-        .scanner-close { position: absolute; top: 20px; right: 20px; color: white; z-index: 4001; font-size: 30px; cursor: pointer; }
+        .magic-btn-small:active {
+            transform: scale(0.95);
+        }
+
+        .magic-btn-small::before {
+            content: "";
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #4285f4, #db4437, #f4b400, #0f9d58);
+            z-index: -1;
+            border-radius: 10px;
+            filter: blur(6px);
+            opacity: 0.8;
+            animation: glowing 3s linear infinite;
+        }
+
+        .magic-btn-small::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 8px;
+            z-index: -1;
+        }
+
+        @keyframes glowing {
+            0% {
+                filter: blur(5px);
+                opacity: 0.6;
+            }
+            50% {
+                filter: blur(8px);
+                opacity: 0.9;
+            }
+            100% {
+                filter: blur(5px);
+                opacity: 0.6;
+            }
+        }
+
+        .crypto-input {
+            width: 100%;
+            padding: 12px 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            transition: 0.2s;
+            background: #f8f9fa;
+            margin-bottom: 15px;
+        }
+
+        .crypto-input:focus {
+            border-color: var(--secondary);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.2);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        #transfer-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 5px;
+            min-height: 0;
+        }
+
+        .transfer-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+            position: relative;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .t-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .t-name {
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 160px;
+        }
+
+        .t-bar-bg {
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .t-bar-fill {
+            height: 100%;
+            background: var(--green);
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        .t-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+            align-items: center;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            color: var(--red);
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        /* Accept File Button Style */
+        .btn-accept-file {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: 0.2s;
+        }
+
+        .btn-accept-file:active {
+            transform: scale(0.95);
+        }
+
+        /* CHAT SECTION */
+        .chat-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+            background-color: #e5ddd5;
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 10px 15px;
+            background: #f0f2f5;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+            flex-shrink: 0;
+        }
+
+        .chat-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sound-toggle-btn {
+            width: 40px;
+            height: 40px;
+            background: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            transition: 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .sound-toggle-btn:active {
+            transform: scale(0.9);
+        }
+
+        .sound-mode-ring {
+            color: var(--primary);
+        }
+
+        .sound-mode-vibrate {
+            color: #ff9800;
+        }
+
+        .sound-mode-silent {
+            color: #999;
+            text-decoration: line-through;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--primary);
+            font-size: 20px;
+            padding: 5px;
+        }
+
+        .messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .msg {
+            max-width: 75%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            word-break: break-word;
+        }
+
+        .msg.sent {
+            align-self: flex-end;
+            background: var(--light);
+            border-top-right-radius: 0;
+        }
+
+        .msg.received {
+            align-self: flex-start;
+            background: white;
+            border-top-left-radius: 0;
+        }
+
+        .msg-time {
+            font-size: 10px;
+            color: #999;
+            float: right;
+            margin-top: 5px;
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .double-tick {
+            color: #4fc3f7;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .msg img {
+            max-width: 100%;
+            border-radius: 6px;
+            cursor: pointer;
+            display: block;
+        }
+
+        .reply-bar {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 15px;
+            border-left: 5px solid var(--secondary);
+            display: none;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #555;
+            flex-shrink: 0;
+        }
+
+        .msg-reply-preview {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 4px;
+            border-left: 3px solid var(--secondary);
+            margin-bottom: 4px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .reply-btn {
+            position: absolute;
+            top: 5px;
+            right: -25px;
+            background: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .msg:hover .reply-btn {
+            display: flex;
+        }
+
+        .input-area {
+            padding: 10px;
+            background: #f0f2f5;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #msg-input {
+            flex-grow: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 20px;
+            outline: none;
+            font-size: 15px;
+            min-width: 0;
+        }
+
+        .send-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-right: 2px;
+        }
+
+        .typing-indicator {
+            font-size: 11px;
+            color: var(--secondary);
+            font-weight: bold;
+            animation: flash 1.5s infinite;
+            display: none;
+        }
+
+        @keyframes flash {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+
+        .mobile-only {
+            display: none;
+        }
+
+        /* OVERLAYS AND MODALS */
+        .fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2000;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .call-card {
+            background: #1f2c34;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            width: 300px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .call-avatar-lg {
+            width: 100px;
+            height: 100px;
+            background: #ddd;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            overflow: hidden;
+        }
+
+        .call-actions {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 40px;
+        }
+
+        .call-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .btn-accept {
+            background: var(--green);
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        .btn-reject {
+            background: var(--red);
+            color: white;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+        }
+
+        .active-call-ui {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #remote-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #local-video {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            width: 120px;
+            height: 160px;
+            background: #333;
+            border-radius: 10px;
+            border: 2px solid white;
+            object-fit: cover;
+        }
+
+        .call-controls-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px 30px;
+            border-radius: 30px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .control-btn.off {
+            background: white;
+            color: black;
+        }
+
+        .btn-hangup {
+            background: var(--red);
+        }
+
+        .connection-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(10px);
+            flex-direction: column;
+        }
+
+        .lock-svg {
+            width: 120px;
+            height: 120px;
+        }
+
+        .lock-body {
+            fill: #4285f4;
+            animation: lockBody 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .lock-shackle {
+            fill: none;
+            stroke: #4285f4;
+            stroke-width: 5;
+            stroke-linecap: round;
+            transform-origin: 50% 35%;
+            animation: lockShackle 0.6s ease forwards 0.4s;
+        }
+
+        .checkmark {
+            fill: none;
+            stroke: #34a853;
+            stroke-width: 5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            animation: checkDraw 0.5s ease forwards 1s;
+        }
+
+        @keyframes lockBody {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes lockShackle {
+            0% { transform: translateY(-15px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes checkDraw {
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* PERMISSION AND AUTH MODALS */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 6000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .perm-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+            animation: slideUp 0.3s ease-out;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .perm-icon {
+            font-size: 45px;
+            margin-bottom: 10px;
+        }
+
+        .perm-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #333;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .perm-step span {
+            background: var(--primary);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .btn-perm-ok {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .modal-img-container img {
+            max-width: 95vw;
+            max-height: 90vh;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.5);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-dl {
+            position: absolute;
+            bottom: 30px;
+            background: white;
+            color: black;
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        #scanner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 4000;
+            display: none;
+            flex-direction: column;
+        }
+
+        #qr-reader {
+            flex-grow: 1;
+        }
+
+        .scanner-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            z-index: 4001;
+            font-size: 30px;
+            cursor: pointer;
+        }
 
         @media (max-width: 768px) {
-            .app-container { flex-direction: column; width: 100%; }
-            .sidebar { width: 100%; height: 100%; position: absolute; top: 0; left: 0; transform: translateX(0); }
-            .sidebar.hidden { transform: translateX(-100%); }
-            .chat-area { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 50; }
-            .mobile-only { display: inline-block; }
-            .files-panel { max-height: none; }
-            .header { padding-right: 10px; }
-            .btn-close-sidebar { background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 10px; }
-            #local-video { width: 90px; height: 120px; bottom: 120px; right: 10px; }
-            .input-area { padding: 8px; gap: 6px; }
+            .app-container {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+                transform: translateX(0);
+            }
+
+            .sidebar.hidden {
+                transform: translateX(-100%);
+            }
+
+            .chat-area {
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+                z-index: 50;
+            }
+
+            .mobile-only {
+                display: inline-block;
+            }
+
+            .files-panel {
+                max-height: none;
+            }
+
+            .header {
+                padding-right: 10px;
+            }
+
+            .btn-close-sidebar {
+                background: none;
+                border: none;
+                color: white;
+                font-size: 20px;
+                cursor: pointer;
+                margin-right: 10px;
+            }
+
+            #local-video {
+                width: 90px;
+                height: 120px;
+                bottom: 120px;
+                right: 10px;
+            }
+
+            .input-area {
+                padding: 8px;
+                gap: 6px;
+            }
         }
     </style>
 </head>
 
 <body>
+    <!-- RINGTONE AUDIO -->
     <audio id="ringtone" loop src="https://media.geeksforgeeks.org/wp-content/uploads/20190531135120/beep.mp3"></audio>
 
     <div class="app-container">
@@ -259,9 +1051,18 @@
             <div class="perm-icon">🔒</div>
             <h3>Permission Roki Gayi</h3>
             <p style="color:#666; font-size:13px; margin-bottom:15px;">Camera ya Mic shuru nahi ho paya kyonki aapke browser ne use block kar diya hai.</p>
-            <div class="perm-step"><span>1</span><div>Upar URL bar me <b>Lock Icon</b> (🔒) par dabayein.</div></div>
-            <div class="perm-step"><span>2</span><div><b>Permissions / Site Settings</b> me jayein.</div></div>
-            <div class="perm-step"><span>3</span><div>Camera aur Mic ko <b>Allow</b> par set karein.</div></div>
+            <div class="perm-step">
+                <span>1</span>
+                <div>Upar URL bar me <b>Lock Icon</b> (🔒) par dabayein.</div>
+            </div>
+            <div class="perm-step">
+                <span>2</span>
+                <div><b>Permissions / Site Settings</b> me jayein.</div>
+            </div>
+            <div class="perm-step">
+                <span>3</span>
+                <div>Camera aur Mic ko <b>Allow</b> par set karein.</div>
+            </div>
             <button class="btn-perm-ok" onclick="document.getElementById('perm-modal').style.display='none'">Theek Hai, Main Kar Lunga</button>
         </div>
     </div>
@@ -316,10 +1117,15 @@
         let globalAesKey = null;
         let urlSaltHex = '';
 
-        function bytesToHex(bytes) { return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(''); }
+        function bytesToHex(bytes) {
+            return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
         function hexToBytes(hex) {
             let bytes = new Uint8Array(hex.length / 2);
-            for (let i = 0; i < hex.length; i += 2) bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+            for (let i = 0; i < hex.length; i += 2) {
+                bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+            }
             return bytes;
         }
 
@@ -347,8 +1153,17 @@
             return new TextDecoder().decode(decrypted);
         }
 
-        const peerConfig = { debug: 2, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:global.stun.twilio.com:3478' }] } };
+        const peerConfig = {
+            debug: 2,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' }
+                ]
+            }
+        };
 
+        // --- EVENT LISTENERS ---
         document.addEventListener('DOMContentLoaded', () => {
             if (window.innerWidth < 768) {
                 const hiddenEl = document.querySelector('.mobile-hidden');
@@ -356,8 +1171,11 @@
             }
 
             window.addEventListener('beforeunload', (e) => {
-                if (!isHost) { history.replaceState(null, null, window.location.pathname); }
+                if (!isHost) {
+                    history.replaceState(null, null, window.location.pathname);
+                }
             });
+            
             initApp();
 
             const msgInput = document.getElementById('msg-input');
@@ -370,13 +1188,15 @@
                     }, 1000);
                 }
             });
-            msgInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendText(); });
+            msgInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendText();
+            });
 
             // CHAT IMAGE (WhatsApp style) - Base64 compression before encryption
             document.getElementById('img-input').addEventListener('change', async function () {
                 const file = this.files[0];
                 if (!file || !globalAesKey) return;
-                
+
                 const img = new Image();
                 img.src = URL.createObjectURL(file);
                 img.onload = async () => {
@@ -393,13 +1213,13 @@
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    
+
                     const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
                     URL.revokeObjectURL(img.src);
 
                     const msgId = Date.now();
                     const { iv, cipher } = await encryptString(compressedBase64, globalAesKey);
-                    
+
                     if (conn && conn.open) conn.send({ type: 'image', id: msgId, iv: iv, cipher: cipher });
                     addImage(compressedBase64, 'sent', msgId);
                 };
@@ -407,25 +1227,44 @@
             });
         });
 
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('hidden'); }
+        // --- UI FUNCTIONS ---
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('hidden');
+        }
+
         function toggleSoundMode() {
             const btn = document.getElementById('sound-toggle');
-            if (callMode === 'ring') { callMode = 'vibrate'; btn.innerText = '📳'; btn.className = 'sound-toggle-btn sound-mode-vibrate'; }
-            else if (callMode === 'vibrate') { callMode = 'silent'; btn.innerText = '🔕'; btn.className = 'sound-toggle-btn sound-mode-silent'; }
-            else { callMode = 'ring'; btn.innerText = '🔔'; btn.className = 'sound-toggle-btn sound-mode-ring'; }
+            if (callMode === 'ring') {
+                callMode = 'vibrate';
+                btn.innerText = '📳';
+                btn.className = 'sound-toggle-btn sound-mode-vibrate';
+            } else if (callMode === 'vibrate') {
+                callMode = 'silent';
+                btn.innerText = '🔕';
+                btn.className = 'sound-toggle-btn sound-mode-silent';
+            } else {
+                callMode = 'ring';
+                btn.innerText = '🔔';
+                btn.className = 'sound-toggle-btn sound-mode-ring';
+            }
         }
 
         function playCallAlert() {
             if (callMode === 'silent') return;
             if (callMode === 'ring') {
                 const audio = document.getElementById('ringtone');
-                audio.currentTime = 0; audio.play().catch(e => console.log("Audio play failed"));
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log("Audio play failed"));
             }
-            if ((callMode === 'ring' || callMode === 'vibrate') && navigator.vibrate) vibrateInterval = setInterval(() => navigator.vibrate([500, 200, 500]), 1500);
+            if ((callMode === 'ring' || callMode === 'vibrate') && navigator.vibrate) {
+                vibrateInterval = setInterval(() => navigator.vibrate([500, 200, 500]), 1500);
+            }
         }
 
         function stopCallAlert() {
-            const audio = document.getElementById('ringtone'); audio.pause(); audio.currentTime = 0;
+            const audio = document.getElementById('ringtone');
+            audio.pause();
+            audio.currentTime = 0;
             if (vibrateInterval) clearInterval(vibrateInterval);
             if (navigator.vibrate) navigator.vibrate(0);
         }
@@ -448,8 +1287,8 @@
         // Host submits password
         async function startHost() {
             const pass = document.getElementById('host-setup-pass').value.trim();
-            if(!pass) return alert("Room Password dalna zaroori hai!");
-            
+            if (!pass) return alert("Room Password dalna zaroori hai!");
+
             document.getElementById('host-setup-modal').style.display = 'none';
             document.getElementById('connect-panel').style.display = 'flex';
 
@@ -473,14 +1312,14 @@
         // Peer submits password
         async function submitPeerAuth() {
             const pass = document.getElementById('peer-room-pass').value.trim();
-            if(!pass) return alert("Password dalein!");
-            
+            if (!pass) return alert("Password dalein!");
+
             const hash = window.location.hash.substring(1);
             const parts = hash.split(':');
             const targetId = parts[0];
             const saltHex = parts[1];
-            
-            if(!saltHex) return alert("QR Code pura nahi hai, dobara scan karein!");
+
+            if (!saltHex) return alert("QR Code pura nahi hai, dobara scan karein!");
 
             const saltArray = hexToBytes(saltHex);
             globalAesKey = await deriveKey(pass, saltArray);
@@ -508,11 +1347,14 @@
             console.error(err);
             if (!isHost && (err.type === 'peer-unavailable' || err.type === 'network')) {
                 alert("Connection fail ho gaya. Kripya fir se scan karein.");
-                window.location.hash = ''; window.location.reload();
+                window.location.hash = '';
+                window.location.reload();
             }
         }
 
-        function connectToPeer(id) { setTimeout(() => setupConnection(peer.connect(id, { reliable: true })), 500); }
+        function connectToPeer(id) {
+            setTimeout(() => setupConnection(peer.connect(id, { reliable: true })), 500);
+        }
 
         function setupConnection(c) {
             conn = c;
@@ -524,14 +1366,18 @@
             });
 
             conn.on('data', handleData);
-            conn.on('close', () => { alert('Device Disconnect ho gaya'); window.location.hash = ''; window.location.reload(); });
+            conn.on('close', () => {
+                alert('Device Disconnect ho gaya');
+                window.location.hash = '';
+                window.location.reload();
+            });
             conn.on('error', (err) => console.error("Conn Error", err));
         }
 
         async function handleData(data) {
             // Handshake logic
             if (data.type === 'auth-verify') {
-                if(isHost) {
+                if (isHost) {
                     try {
                         const decrypted = await decryptString(data.cipher, data.iv, globalAesKey);
                         if (decrypted === "AUTH_MAGIC") {
@@ -541,7 +1387,7 @@
                             conn.send({ type: 'auth-fail' });
                             setTimeout(() => conn.close(), 500);
                         }
-                    } catch(e) {
+                    } catch (e) {
                         conn.send({ type: 'auth-fail' });
                         setTimeout(() => conn.close(), 500);
                     }
@@ -549,38 +1395,58 @@
                 return;
             }
 
-            if (data.type === 'auth-ok') { unlockUI(); return; }
-            if (data.type === 'auth-fail') { 
-                alert("Galat Password! Host ne connection kaat diya."); 
-                window.location.hash = ''; window.location.reload(); 
-                return; 
+            if (data.type === 'auth-ok') {
+                unlockUI();
+                return;
+            }
+            if (data.type === 'auth-fail') {
+                alert("Galat Password! Host ne connection kaat diya.");
+                window.location.hash = '';
+                window.location.reload();
+                return;
             }
 
-            if (!globalAesKey) return; 
+            if (!globalAesKey) return;
 
             switch (data.type) {
-                case 'text': 
+                case 'text':
                     try {
                         const text = await decryptString(data.cipher, data.iv, globalAesKey);
-                        addMessage(text, 'received', data.reply); conn.send({ type: 'ack', id: data.id }); 
-                    } catch(e) { console.error("Message decrypt nahi hua"); }
+                        addMessage(text, 'received', data.reply);
+                        conn.send({ type: 'ack', id: data.id });
+                    } catch (e) { console.error("Message decrypt nahi hua"); }
                     break;
-                case 'image': 
+                case 'image':
                     try {
                         const base64 = await decryptString(data.cipher, data.iv, globalAesKey);
-                        addImage(base64, 'received', data.id); conn.send({ type: 'ack', id: data.id }); 
-                    } catch(e) { console.error("Image decrypt nahi hui"); }
+                        addImage(base64, 'received', data.id);
+                        conn.send({ type: 'ack', id: data.id });
+                    } catch (e) { console.error("Image decrypt nahi hui"); }
                     break;
-                case 'typing': document.getElementById('typing-indicator').style.display = data.isTyping ? 'block' : 'none'; break;
-                case 'ack': markRead(data.id); break;
-                case 'dl-notify': markDownloaded(data.id); break;
-                
-                case 'file-meta': startReceivingFile(data); break;
-                case 'file-accept': startSendingActiveTransfer(data.fileId); break;
-                case 'file-chunk': processFileChunk(data); break;
-                case 'file-cancel': handleFileCancel(data.fileId); break;
-                
-                case 'call-end': endCallUI(); break;
+                case 'typing':
+                    document.getElementById('typing-indicator').style.display = data.isTyping ? 'block' : 'none';
+                    break;
+                case 'ack':
+                    markRead(data.id);
+                    break;
+                case 'dl-notify':
+                    markDownloaded(data.id);
+                    break;
+                case 'file-meta':
+                    startReceivingFile(data);
+                    break;
+                case 'file-accept':
+                    startSendingActiveTransfer(data.fileId);
+                    break;
+                case 'file-chunk':
+                    processFileChunk(data);
+                    break;
+                case 'file-cancel':
+                    handleFileCancel(data.fileId);
+                    break;
+                case 'call-end':
+                    endCallUI();
+                    break;
             }
         }
 
@@ -593,7 +1459,10 @@
             document.getElementById('status-badge').style.background = 'var(--green)';
             document.getElementById('connect-panel').style.display = 'none';
             document.getElementById('connection-status').innerText = 'Online';
-            if (window.innerWidth < 768) document.getElementById('sidebar').classList.add('hidden');
+            
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('hidden');
+            }
         }
 
         async function shareQRCode() {
@@ -604,34 +1473,47 @@
             try {
                 const blob = await (await fetch(url)).blob();
                 const file = new File([blob], "qr.png", { type: "image/png" });
-                if (navigator.share) navigator.share({ files: [file], url: window.location.href.split('#')[0] + '#' + myId + ':' + urlSaltHex }).catch(e=>{});
-                else alert("Web Share API is browser mein support nahi karta.");
+                if (navigator.share) {
+                    navigator.share({ files: [file], url: window.location.href.split('#')[0] + '#' + myId + ':' + urlSaltHex }).catch(e => { });
+                } else {
+                    alert("Web Share API is browser mein support nahi karta.");
+                }
             } catch (e) { console.error("Error sharing QR", e); }
         }
 
+        // --- CHAT FUNCTIONS ---
         async function sendText() {
             const input = document.getElementById('msg-input');
             const val = input.value.trim();
             if (!val || !conn || !conn.open || !globalAesKey) return;
-            
+
             const id = Date.now();
             const { iv, cipher } = await encryptString(val, globalAesKey);
             conn.send({ type: 'text', id: id, reply: replyContext, iv: iv, cipher: cipher });
             addMessage(val, 'sent', replyContext, id);
-            input.value = ''; cancelReply(); input.focus();
+            input.value = '';
+            cancelReply();
+            input.focus();
         }
 
         function addMessage(text, type, reply, id) {
-            const div = document.createElement('div'); div.className = `msg ${type}`; div.id = `msg-${id}`;
+            const div = document.createElement('div');
+            div.className = `msg ${type}`;
+            div.id = `msg-${id}`;
             let html = reply ? `<div class="msg-reply-preview">${reply.text.substring(0, 50)}...</div>` : '';
             html += `${text}<div class="msg-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ${type === 'sent' ? '<span class="double-tick">✓</span>' : ''}</div><div class="reply-btn" onclick="setReply('${text.replace(/'/g, "\\'")}')">↩</div>`;
-            div.innerHTML = html; document.getElementById('messages').appendChild(div); scrollToBottom();
+            div.innerHTML = html;
+            document.getElementById('messages').appendChild(div);
+            scrollToBottom();
         }
 
         function addImage(src, type, id) {
-            const div = document.createElement('div'); div.className = `msg ${type}`; div.id = `msg-${id}`;
+            const div = document.createElement('div');
+            div.className = `msg ${type}`;
+            div.id = `msg-${id}`;
             div.innerHTML = `<img src="${src}" onclick="openModal(this.src, '${type}', ${id})"><div class="msg-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ${type === 'sent' ? '<span class="double-tick">✓</span>' : ''}</div>${type === 'sent' ? '<div class="download-indicator" style="font-size:10px; display:none;">Dost ne dekh liya</div>' : ''}`;
-            document.getElementById('messages').appendChild(div); scrollToBottom();
+            document.getElementById('messages').appendChild(div);
+            scrollToBottom();
         }
 
         // --- FIX 1: HANG-FREE DIRECT-TO-DISK FILE TRANSFER ---
@@ -641,11 +1523,14 @@
                 fileQueue.push({ file: f, id: id });
                 createFileUI(id, f.name, 'Bhej raha hai');
             }
-            processFileQueue(); this.value = '';
+            processFileQueue();
+            this.value = '';
         };
 
         function createFileUI(id, name, type) {
-            const div = document.createElement('div'); div.className = 'transfer-item'; div.id = `file-${id}`;
+            const div = document.createElement('div');
+            div.className = 'transfer-item';
+            div.id = `file-${id}`;
             let initialEta = (type === 'Bhej raha hai') ? 'Dost ke Save karne ka intezaar...' : 'Hisaab laga raha hai...';
             div.innerHTML = `<div class="t-info"><span class="t-name">${name}</span><button class="btn-cancel" onclick="cancelTransfer('${id}', '${type}')">✕</button></div><div class="t-bar-bg"><div class="t-bar-fill" id="bar-${id}"></div></div><div class="t-meta"><span id="prog-${id}">0%</span><span id="eta-${id}">${initialEta}</span></div>`;
             document.getElementById('transfer-list').prepend(div);
@@ -656,11 +1541,12 @@
             if (!conn || !conn.open || !globalAesKey) return;
 
             const item = fileQueue.shift();
-            activeTransfer = item; isTransferring = true;
+            activeTransfer = item;
+            isTransferring = true;
 
             try {
                 conn.send({ type: 'file-meta', fileId: item.id, name: item.file.name, size: item.file.size, fileType: item.file.type });
-            } catch(e) {
+            } catch (e) {
                 console.error("Transfer failed", e);
                 isTransferring = false;
             }
@@ -670,17 +1556,17 @@
             if (!activeTransfer || activeTransfer.id !== fileId || !conn || !conn.open || !globalAesKey) return;
 
             document.getElementById(`eta-${fileId}`).innerText = 'Bhej raha hai...';
-            
+
             const item = activeTransfer;
-            let offset = 0; 
+            let offset = 0;
             let start = Date.now();
             const CHUNK_SIZE = 256 * 1024;
             const MAX_BUFFER = 8 * 1024 * 1024; // 8MB limit to be extremely safe on memory
 
             try {
                 while (offset < item.file.size) {
-                    if (!activeTransfer || activeTransfer.id !== item.id) break; 
-                    
+                    if (!activeTransfer || activeTransfer.id !== item.id) break;
+
                     // AWAIT AND YIELD: The absolute cure for browser freezing
                     while (conn.dataChannel && conn.dataChannel.bufferedAmount > MAX_BUFFER) {
                         await new Promise(resolve => setTimeout(resolve, 50));
@@ -690,27 +1576,27 @@
                     const slice = item.file.slice(offset, offset + CHUNK_SIZE);
                     const chunkBuffer = await slice.arrayBuffer();
                     const iv = window.crypto.getRandomValues(new Uint8Array(12));
-                    
+
                     const encryptedChunk = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, globalAesKey, chunkBuffer);
                     offset += chunkBuffer.byteLength;
 
                     if (conn && conn.open) {
-                        conn.send({ type: 'file-chunk', fileId: item.id, iv: iv, data: encryptedChunk, offset: offset }); // Send raw Uint8Array IV directly!
+                        conn.send({ type: 'file-chunk', fileId: item.id, iv: iv, data: encryptedChunk, offset: offset });
                         updateProgress(item.id, offset, item.file.size, start);
 
                         // Give Chrome 1 millisecond to breathe and update UI (0% Freeze)
-                        await new Promise(resolve => setTimeout(resolve, 0));
+                        await new Promise(resolve => setTimeout(resolve, 1));
                     } else {
                         break;
                     }
                 }
                 if (offset >= item.file.size) {
                     isTransferring = false;
-                    setTimeout(processFileQueue, 50); 
+                    setTimeout(processFileQueue, 50);
                 } else {
                     isTransferring = false;
                 }
-            } catch(err) {
+            } catch (err) {
                 console.error("Encryption Loop failed", err);
                 isTransferring = false;
             }
@@ -720,7 +1606,7 @@
         function startReceivingFile(meta) {
             receiving[meta.fileId] = { name: meta.name, size: meta.size, fileType: meta.fileType, received: 0, buffer: [], start: null, useDisk: false, stream: null };
             createFileUI(meta.fileId, meta.name, 'Permission mang raha hai');
-            
+
             const etaEl = document.getElementById(`eta-${meta.fileId}`);
             if (etaEl) {
                 etaEl.innerHTML = `<button class="btn-accept-file" onclick="acceptFileTransfer('${meta.fileId}')">📥 Save Karein</button>`;
@@ -750,9 +1636,8 @@
         async function processFileChunk(data) {
             const f = receiving[data.fileId];
             if (!f || !globalAesKey) return;
-            
+
             try {
-                // data.iv is already ArrayBuffer, decrypt accepts it seamlessly
                 const decryptedChunk = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: new Uint8Array(data.iv) }, globalAesKey, data.data);
 
                 if (f.useDisk) {
@@ -761,7 +1646,7 @@
                     f.buffer.push(decryptedChunk);
                 }
 
-                f.received = data.offset; 
+                f.received = data.offset;
                 updateProgress(data.fileId, f.received, f.size, f.start);
 
                 if (f.received >= f.size) {
@@ -769,16 +1654,20 @@
                         await f.stream.close();
                         document.getElementById(`eta-${data.fileId}`).innerText = 'Pura Hua (Disk me save)';
                     } else {
-                        const blob = new Blob(f.buffer, {type: f.fileType});
+                        const blob = new Blob(f.buffer, { type: f.fileType });
                         const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a'); a.href = url; a.download = f.name;
-                        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = f.name;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
                         setTimeout(() => URL.revokeObjectURL(url), 10000);
                         document.getElementById(`eta-${data.fileId}`).innerText = 'Pura Hua';
                     }
                     delete receiving[data.fileId];
                 }
-            } catch(e) {
+            } catch (e) {
                 const etaEl = document.getElementById(`eta-${data.fileId}`);
                 if (etaEl) etaEl.innerText = 'Decryption Error';
                 cancelTransfer(data.fileId, 'Receiving');
@@ -790,12 +1679,13 @@
             const bar = document.getElementById(`bar-${id}`);
             const txt = document.getElementById(`prog-${id}`);
             const eta = document.getElementById(`eta-${id}`);
+            
             if (bar) bar.style.width = pct + '%';
             if (txt) txt.innerText = pct + '%';
 
             if (start) {
                 const elapsed = (Date.now() - start) / 1000;
-                if(elapsed > 0) {
+                if (elapsed > 0) {
                     const rate = cur / elapsed;
                     const left = (tot - cur) / rate;
                     if (eta && isFinite(left)) {
@@ -816,14 +1706,21 @@
 
         function cancelTransfer(id, type) {
             const el = document.getElementById(`file-${id}`);
-            if(el) el.remove();
-            
+            if (el) el.remove();
+
             if (conn && conn.open) conn.send({ type: 'file-cancel', fileId: id });
             if (type === 'Bhej raha hai') {
-                if (activeTransfer?.id === id) { activeTransfer = null; isTransferring = false; processFileQueue(); }
-                else fileQueue = fileQueue.filter(i => i.id !== id);
+                if (activeTransfer?.id === id) {
+                    activeTransfer = null;
+                    isTransferring = false;
+                    processFileQueue();
+                } else {
+                    fileQueue = fileQueue.filter(i => i.id !== id);
+                }
             } else {
-                if(receiving[id] && receiving[id].useDisk && receiving[id].stream) receiving[id].stream.abort().catch(()=>{}); 
+                if (receiving[id] && receiving[id].useDisk && receiving[id].stream) {
+                    receiving[id].stream.abort().catch(() => { });
+                }
                 delete receiving[id];
             }
         }
@@ -831,36 +1728,76 @@
         function handleFileCancel(id) {
             const el = document.getElementById(`file-${id}`);
             if (el) el.innerHTML = '<span style="color:red">Dost ne cancel kiya</span>';
-            if (activeTransfer?.id === id) { activeTransfer = null; isTransferring = false; processFileQueue(); }
+            if (activeTransfer?.id === id) {
+                activeTransfer = null;
+                isTransferring = false;
+                processFileQueue();
+            }
             delete receiving[id];
         }
 
-        function scrollToBottom() { document.getElementById('messages').scrollTop = 1000000; }
-        function markRead(id) { const el = document.querySelector(`#msg-${id} .double-tick`); if (el) el.innerText = '✓✓'; }
-        function markDownloaded(id) { const el = document.querySelector(`#msg-${id} .download-indicator`); if (el) el.style.display = 'block'; }
-        function openModal(src, type, id) {
-            document.getElementById('img-modal').style.display = 'flex'; document.getElementById('modal-img').src = src;
-            const dl = document.getElementById('modal-dl');
-            if (type === 'received') { dl.style.display = 'block'; dl.href = src; dl.onclick = () => conn.send({ type: 'dl-notify', id: id }); }
-            else dl.style.display = 'none';
+        function scrollToBottom() {
+            document.getElementById('messages').scrollTop = 1000000;
         }
-        function closeModal() { document.getElementById('img-modal').style.display = 'none'; }
-        function setReply(t) { replyContext = { text: t }; document.getElementById('reply-bar').style.display = 'flex'; document.getElementById('reply-text-preview').innerText = t.substring(0, 50) + '...'; }
-        function cancelReply() { replyContext = null; document.getElementById('reply-bar').style.display = 'none'; }
+
+        function markRead(id) {
+            const el = document.querySelector(`#msg-${id} .double-tick`);
+            if (el) el.innerText = '✓✓';
+        }
+
+        function markDownloaded(id) {
+            const el = document.querySelector(`#msg-${id} .download-indicator`);
+            if (el) el.style.display = 'block';
+        }
+
+        function openModal(src, type, id) {
+            document.getElementById('img-modal').style.display = 'flex';
+            document.getElementById('modal-img').src = src;
+            const dl = document.getElementById('modal-dl');
+            if (type === 'received') {
+                dl.style.display = 'block';
+                dl.href = src;
+                dl.onclick = () => conn.send({ type: 'dl-notify', id: id });
+            } else {
+                dl.style.display = 'none';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('img-modal').style.display = 'none';
+        }
+
+        function setReply(t) {
+            replyContext = { text: t };
+            document.getElementById('reply-bar').style.display = 'flex';
+            document.getElementById('reply-text-preview').innerText = t.substring(0, 50) + '...';
+        }
+
+        function cancelReply() {
+            replyContext = null;
+            document.getElementById('reply-bar').style.display = 'none';
+        }
 
         // --- CALLS & MEDIA ---
-        const mediaConstraints = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 }, facingMode: "user" } };
+        const mediaConstraints = {
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+            video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 }, facingMode: "user" }
+        };
 
         function checkMediaPermissions(vid) {
             return new Promise((resolve, reject) => {
                 const constraints = vid ? mediaConstraints : { audio: true, video: false };
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     alert("Aapka browser calling support nahi karta. HTTPS aur modern browser use karein.");
-                    reject("Not supported"); return;
+                    reject("Not supported");
+                    return;
                 }
                 navigator.mediaDevices.getUserMedia(constraints).then(resolve).catch(err => {
-                    if(err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') document.getElementById('perm-modal').style.display = 'flex';
-                    else alert("Camera/Mic ka error: " + err.message);
+                    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                        document.getElementById('perm-modal').style.display = 'flex';
+                    } else {
+                        alert("Camera/Mic ka error: " + err.message);
+                    }
                     reject(err);
                 });
             });
@@ -868,7 +1805,8 @@
 
         function initCall(vid) {
             checkMediaPermissions(vid).then(s => {
-                localStream = s; document.getElementById('active-call-ui').style.display = 'flex';
+                localStream = s;
+                document.getElementById('active-call-ui').style.display = 'flex';
                 document.getElementById('local-video').srcObject = s;
                 const call = peer.call(conn.peer, s, { metadata: { type: vid ? 'video' : 'audio' } });
                 handleCall(call);
@@ -876,21 +1814,56 @@
         }
 
         function answerCall() {
-            stopCallAlert(); document.getElementById('incoming-call-ui').style.display = 'none';
+            stopCallAlert();
+            document.getElementById('incoming-call-ui').style.display = 'none';
             const vid = window.pendingCall.metadata.type === 'video';
             checkMediaPermissions(vid).then(s => {
-                localStream = s; document.getElementById('active-call-ui').style.display = 'flex';
-                document.getElementById('local-video').srcObject = s; window.pendingCall.answer(s);
+                localStream = s;
+                document.getElementById('active-call-ui').style.display = 'flex';
+                document.getElementById('local-video').srcObject = s;
+                window.pendingCall.answer(s);
                 handleCall(window.pendingCall);
             }).catch(e => console.log("Call uthane me error"));
         }
 
-        function handleCall(call) { activeCall = call; call.on('stream', r => { document.getElementById('remote-video').srcObject = r; }); call.on('close', endCallUI); }
-        function endCall() { activeCall?.close(); if(conn && conn.open) conn.send({ type: 'call-end' }); endCallUI(); }
-        function endCallUI() { stopCallAlert(); document.getElementById('active-call-ui').style.display = 'none'; document.getElementById('incoming-call-ui').style.display = 'none'; if (localStream) localStream.getTracks().forEach(t => t.stop()); }
-        function toggleMic() { const t = localStream.getAudioTracks()[0]; t.enabled = !t.enabled; document.getElementById('btn-mute').classList.toggle('off'); }
-        function toggleCam() { const t = localStream.getVideoTracks()[0]; if (t) { t.enabled = !t.enabled; document.getElementById('btn-cam').classList.toggle('off'); } }
-        function rejectCall() { stopCallAlert(); document.getElementById('incoming-call-ui').style.display = 'none'; window.pendingCall?.close(); }
+        function handleCall(call) {
+            activeCall = call;
+            call.on('stream', r => { document.getElementById('remote-video').srcObject = r; });
+            call.on('close', endCallUI);
+        }
+
+        function endCall() {
+            activeCall?.close();
+            if (conn && conn.open) conn.send({ type: 'call-end' });
+            endCallUI();
+        }
+
+        function endCallUI() {
+            stopCallAlert();
+            document.getElementById('active-call-ui').style.display = 'none';
+            document.getElementById('incoming-call-ui').style.display = 'none';
+            if (localStream) localStream.getTracks().forEach(t => t.stop());
+        }
+
+        function toggleMic() {
+            const t = localStream.getAudioTracks()[0];
+            t.enabled = !t.enabled;
+            document.getElementById('btn-mute').classList.toggle('off');
+        }
+
+        function toggleCam() {
+            const t = localStream.getVideoTracks()[0];
+            if (t) {
+                t.enabled = !t.enabled;
+                document.getElementById('btn-cam').classList.toggle('off');
+            }
+        }
+
+        function rejectCall() {
+            stopCallAlert();
+            document.getElementById('incoming-call-ui').style.display = 'none';
+            window.pendingCall?.close();
+        }
 
         // --- SCANNER ---
         let qrScanner;
@@ -901,22 +1874,37 @@
                 stopScanner();
                 try {
                     let id = t.includes('#') ? t.split('#')[1] : t;
-                    if (id && id.length > 0) { window.location.hash = id; window.location.reload(); }
-                    else alert("QR Code theek nahi hai");
-                } catch(e) { alert("QR parse error"); }
+                    if (id && id.length > 0) {
+                        window.location.hash = id;
+                        window.location.reload();
+                    } else {
+                        alert("QR Code theek nahi hai");
+                    }
+                } catch (e) {
+                    alert("QR parse error");
+                }
             }).catch(err => {
-                console.error("Scanner error", err); 
+                console.error("Scanner error", err);
                 // Automatically display the permission modal if scanner is blocked natively
                 document.getElementById('scanner-overlay').style.display = 'none';
                 document.getElementById('perm-modal').style.display = 'flex';
             });
         }
 
-        function stopScanner() { 
+        function stopScanner() {
             if (qrScanner && qrScanner.isScanning) {
-                qrScanner.stop().then(() => { qrScanner.clear(); document.getElementById('scanner-overlay').style.display = 'none'; qrScanner = null; }).catch(err => { document.getElementById('scanner-overlay').style.display = 'none'; });
-            } else { document.getElementById('scanner-overlay').style.display = 'none'; }
+                qrScanner.stop().then(() => {
+                    qrScanner.clear();
+                    document.getElementById('scanner-overlay').style.display = 'none';
+                    qrScanner = null;
+                }).catch(err => {
+                    document.getElementById('scanner-overlay').style.display = 'none';
+                });
+            } else {
+                document.getElementById('scanner-overlay').style.display = 'none';
+            }
         }
     </script>
 </body>
+
 </html>
