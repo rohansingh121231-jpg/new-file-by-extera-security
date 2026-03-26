@@ -94,6 +94,7 @@
             border-radius: 8px;
             margin-bottom: 15px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.5s ease;
         }
 
         #qrcode img,
@@ -430,7 +431,7 @@
             <div class="connect-panel" id="connect-panel">
                 <div id="qrcode"></div>
                 <p id="connect-msg" style="color:#666; margin-bottom:20px; font-weight: bold;">Device jodne ke liye QR Scan karein</p>
-                <div style="display:flex; justify-content:center; flex-wrap:wrap; gap: 10px;">
+                <div style="display:flex; justify-content:center; flex-wrap:wrap; gap: 10px;" id="connect-buttons">
                     <button class="btn btn-outline" onclick="shareQRCode()"> QR Bhejein</button>
                     <button class="btn btn-primary" onclick="startScanner()"> QR Scan Karein</button>
                 </div>
@@ -588,11 +589,12 @@
         let typingTimeout;
         let callMode = 'ring';
         let vibrateInterval;
-
         let progressThrottleMap = {};
 
+        // --- NEW FEATURE: SELF-DESTRUCTING LINK (BURN AFTER CONNECT) ---
+        let roomLocked = false; 
+
         // --- NEW SECURE CRYPTOGRAPHY ENGINE ---
-        // Ise hum ab sirf Room Auth, Text aur Images ke liye use karenge
         let globalAesKey = null;
         let urlSaltHex = '';
 
@@ -836,6 +838,15 @@
         }
 
         function setupConnection(c) {
+            // SELF-DESTRUCTING LOGIC: Reject any 2nd connection or connection after lock
+            if (isHost && (roomLocked || (conn && conn.open))) {
+                c.on('open', () => {
+                    c.send({ type: 'auth-fail', reason: 'expired' });
+                    setTimeout(() => c.close(), 500);
+                });
+                return;
+            }
+
             conn = c;
             conn.on('open', async () => {
                 if (!isHost) {
@@ -846,7 +857,12 @@
 
             conn.on('data', handleData);
             conn.on('close', () => {
-                alert('Device Disconnect ho gaya');
+                // If disconnected after burn, enforce reload to create new room
+                if (roomLocked) {
+                    alert('Connection Lost. Ye link ab expire ho chuka hai. Naya room banayein.');
+                } else {
+                    alert('Device Disconnect ho gaya');
+                }
                 window.location.hash = '';
                 window.location.reload();
             });
@@ -859,14 +875,17 @@
                     try {
                         const decrypted = await decryptString(data.cipher, data.iv, globalAesKey);
                         if (decrypted === "AUTH_MAGIC") {
+                            roomLocked = true; // BURN THE LINK FOREVER
+                            burnQRCodeUI(); // Visually destroy the QR
+                            
                             conn.send({ type: 'auth-ok' });
                             unlockUI();
                         } else {
-                            conn.send({ type: 'auth-fail' });
+                            conn.send({ type: 'auth-fail', reason: 'wrong-pass' });
                             setTimeout(() => conn.close(), 500);
                         }
                     } catch (e) {
-                        conn.send({ type: 'auth-fail' });
+                        conn.send({ type: 'auth-fail', reason: 'wrong-pass' });
                         setTimeout(() => conn.close(), 500);
                     }
                 }
@@ -875,7 +894,10 @@
 
             if (data.type === 'auth-ok') { unlockUI(); return; }
             if (data.type === 'auth-fail') {
-                alert("Galat Password! Host ne connection kaat diya.");
+                const msg = data.reason === 'expired' 
+                    ? "⚠️ Ye link pehle hi koi use kar chuka hai ya Expire ho gaya hai! (Burned Link)"
+                    : "❌ Galat Password! Host ne connection kaat diya.";
+                alert(msg);
                 window.location.hash = '';
                 window.location.reload();
                 return;
@@ -905,10 +927,26 @@
                 case 'dl-notify': markDownloaded(data.id); break;
                 case 'file-meta': startReceivingFile(data); break;
                 case 'file-accept': startSendingActiveTransfer(data.fileId); break;
-                case 'file-chunk': processFileChunk(data); break; // AB YEH BINA JS ENCRYPTION KE CHALEGA
+                case 'file-chunk': processFileChunk(data); break;
                 case 'file-cancel': handleFileCancel(data.fileId); break;
                 case 'call-end': endCallUI(); break;
             }
+        }
+
+        // VISUAL DESTRUCTION OF LINK
+        function burnQRCodeUI() {
+            const qrContainer = document.getElementById('qrcode');
+            if (qrContainer) {
+                qrContainer.innerHTML = '<div style="font-size: 50px;">🔥</div><div style="color:var(--red); font-size:18px; font-weight:bold; margin-top:10px;">Link Burned</div>';
+                qrContainer.style.boxShadow = '0 0 15px rgba(211, 47, 47, 0.5)';
+            }
+            const connectMsg = document.getElementById('connect-msg');
+            if (connectMsg) {
+                connectMsg.innerText = 'Security ke liye ye Link ab hamesha ke liye destroy ho chuka hai (One-time use).';
+                connectMsg.style.color = 'var(--red)';
+            }
+            const btns = document.getElementById('connect-buttons');
+            if (btns) btns.style.display = 'none'; // Hide Share/Scan buttons
         }
 
         function unlockUI() {
@@ -918,10 +956,11 @@
 
             document.getElementById('status-badge').innerText = 'Juda Hua Hai';
             document.getElementById('status-badge').style.background = 'var(--green)';
-            document.getElementById('connect-panel').style.display = 'none';
-            document.getElementById('connection-status').innerText = 'Online';
             
-            if (window.innerWidth < 768) document.getElementById('sidebar').classList.add('hidden');
+            // Only hide sidebar completely if on Mobile
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('hidden');
+            }
         }
 
         async function shareQRCode() {
@@ -974,7 +1013,6 @@
             scrollToBottom();
         }
 
-        // --- MASTERPLAN FILE TRANSFER (WebRTC Native DTLS Encryption) ---
         document.getElementById('file-input').onchange = function () {
             if (this.files.length === 0) return;
 
@@ -1041,8 +1079,6 @@
                 if (!activeTransfer || activeTransfer.id !== item.id) return;
                 
                 try {
-                    // YAHAN HUMNE JS ENCRYPTION HATA DIYA HAI.
-                    // WebRTC native hardware acceleration (DTLS) se is raw buffer ko encrypt karke bhejega!
                     const rawChunkBuffer = e.target.result;
                     offset += rawChunkBuffer.byteLength;
 
@@ -1118,7 +1154,6 @@
             if (!f) return;
 
             try {
-                // JS ENCRYPTION HATA DIYA - WebRTC ne pehle hi DTLS decrypt kar diya hai background me
                 const rawChunk = data.data;
 
                 if (f.useDisk) {
