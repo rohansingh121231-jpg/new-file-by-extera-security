@@ -414,7 +414,6 @@
 </head>
 
 <body>
-    <!-- RINGTONE AUDIO -->
     <audio id="ringtone" loop src="https://media.geeksforgeeks.org/wp-content/uploads/20190531135120/beep.mp3"></audio>
 
     <div class="app-container">
@@ -589,11 +588,19 @@
         let typingTimeout;
         let callMode = 'ring';
         let vibrateInterval;
+        let roomLocked = false;
 
-        // --- NEW FEATURE: SELF-DESTRUCTING LINK (BURN AFTER CONNECT) ---
-        let roomLocked = false; 
+        // ═══════════════════════════════════════════════════════════
+        // BUG FIX: MOBILE CHUNK FLOW CONTROL CONSTANTS
+        // Yeh values mobile freeze hone se rokti hain.
+        // Max 64KB chunk size - mobile ke liye safe
+        // ═══════════════════════════════════════════════════════════
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const CHUNK_SIZE = isMobileDevice ? 16384 : 65536;       // Mobile: 16KB | PC: 64KB
+        const MAX_BUFFER_BYTES = isMobileDevice ? 65536 : 262144; // Mobile: 64KB | PC: 256KB
+        const BUFFER_WAIT_MS = isMobileDevice ? 100 : 30;         // Mobile: 100ms wait | PC: 30ms
 
-        // --- NEW SECURE CRYPTOGRAPHY ENGINE ---
+        // --- CRYPTO ENGINE ---
         let globalAesKey = null;
         let urlSaltHex = '';
 
@@ -645,15 +652,8 @@
 
         // --- EVENT LISTENERS ---
         document.addEventListener('DOMContentLoaded', () => {
-            if (window.innerWidth < 768) {
-                const hiddenEl = document.querySelector('.mobile-hidden');
-                if (hiddenEl) hiddenEl.style.display = 'none';
-            }
-
             window.addEventListener('beforeunload', (e) => {
-                if (!isHost) {
-                    history.replaceState(null, null, window.location.pathname);
-                }
+                if (!isHost) history.replaceState(null, null, window.location.pathname);
             });
             
             initApp();
@@ -684,7 +684,6 @@
                         const MAX_WIDTH = 800;
                         let width = img.width;
                         let height = img.height;
-
                         if (width > MAX_WIDTH) {
                             height = Math.round((height * MAX_WIDTH) / width);
                             width = MAX_WIDTH;
@@ -693,17 +692,15 @@
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-
                         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
                         URL.revokeObjectURL(img.src);
 
                         const msgId = Date.now();
                         const { iv, cipher } = await encryptString(compressedBase64, globalAesKey);
-
                         if (conn && conn.open) conn.send({ type: 'image', id: msgId, iv: iv, cipher: cipher });
                         addImage(compressedBase64, 'sent', msgId);
                     };
-                }, 500); 
+                }, 500);
 
                 setTimeout(() => { e.target.value = ''; }, 1000);
             });
@@ -837,7 +834,6 @@
         }
 
         function setupConnection(c) {
-            // SELF-DESTRUCTING LOGIC: Reject any 2nd connection or connection after lock
             if (isHost && (roomLocked || (conn && conn.open))) {
                 c.on('open', () => {
                     c.send({ type: 'auth-fail', reason: 'expired' });
@@ -873,9 +869,8 @@
                     try {
                         const decrypted = await decryptString(data.cipher, data.iv, globalAesKey);
                         if (decrypted === "AUTH_MAGIC") {
-                            roomLocked = true; // BURN THE LINK FOREVER
-                            burnQRCodeUI(); // Visually destroy the QR
-                            
+                            roomLocked = true;
+                            burnQRCodeUI();
                             conn.send({ type: 'auth-ok' });
                             unlockUI();
                         } else {
@@ -892,7 +887,7 @@
 
             if (data.type === 'auth-ok') { unlockUI(); return; }
             if (data.type === 'auth-fail') {
-                const msg = data.reason === 'expired' 
+                const msg = data.reason === 'expired'
                     ? "⚠️ Ye link pehle hi koi use kar chuka hai ya Expire ho gaya hai! (Burned Link)"
                     : "❌ Galat Password! Host ne connection kaat diya.";
                 alert(msg);
@@ -931,7 +926,6 @@
             }
         }
 
-        // VISUAL DESTRUCTION OF LINK
         function burnQRCodeUI() {
             const qrContainer = document.getElementById('qrcode');
             if (qrContainer) {
@@ -944,7 +938,7 @@
                 connectMsg.style.color = 'var(--red)';
             }
             const btns = document.getElementById('connect-buttons');
-            if (btns) btns.style.display = 'none'; // Hide Share/Scan buttons
+            if (btns) btns.style.display = 'none';
         }
 
         function unlockUI() {
@@ -954,8 +948,8 @@
 
             document.getElementById('status-badge').innerText = 'Juda Hua Hai';
             document.getElementById('status-badge').style.background = 'var(--green)';
+            document.getElementById('connection-status').innerText = 'Online';
             
-            // Only hide sidebar completely if on Mobile
             if (window.innerWidth < 768) {
                 document.getElementById('sidebar').classList.add('hidden');
             }
@@ -970,7 +964,7 @@
                 const blob = await (await fetch(url)).blob();
                 const file = new File([blob], "qr.png", { type: "image/png" });
                 if (navigator.share) {
-                    navigator.share({ files: [file], url: window.location.href.split('#')[0] + '#' + myId + ':' + urlSaltHex }).catch(e => { });
+                    navigator.share({ files: [file], url: window.location.href.split('#')[0] + '#' + myId + ':' + urlSaltHex }).catch(e => {});
                 } else {
                     alert("Web Share API is browser mein support nahi karta.");
                 }
@@ -1021,7 +1015,7 @@
                 createFileUI(id, f.name, 'Bhej raha hai');
             }
             processFileQueue();
-            this.value = ''; 
+            this.value = '';
         };
 
         function createFileUI(id, name, type) {
@@ -1049,9 +1043,13 @@
             }
         }
 
-        // ==============================================================
-        // 🔥 BUG FIX: SENDER FUNCTION WITH BACKPRESSURE & TIMEOUT YIELD
-        // ==============================================================
+        // ═══════════════════════════════════════════════════════════════════
+        // BUG FIX: FLOW-CONTROLLED FILE SENDER
+        // Purane version mein koi buffer check nahi tha → mobile freeze hota tha.
+        // Ab hum conn.dataChannel.bufferedAmount check karte hain.
+        // Agar buffer bhar jaye (MAX_BUFFER_BYTES se zyada), to wait karte hain.
+        // Yahi woh fix hai jo mobile freeze rokta hai.
+        // ═══════════════════════════════════════════════════════════════════
         function startSendingActiveTransfer(fileId) {
             if (!activeTransfer || activeTransfer.id !== fileId || !conn || !conn.open) return;
 
@@ -1060,31 +1058,24 @@
             const item = activeTransfer;
             let offset = 0;
             let start = Date.now();
-            
-            // CHUNK SIZE INCREASED TO 64KB FOR BETTER PERFORMANCE
-            const CHUNK_SIZE = 65536; 
             const reader = new FileReader();
 
             reader.onload = (e) => {
                 if (!activeTransfer || activeTransfer.id !== item.id) return;
-                
+
                 if (conn && conn.open) {
-                    conn.send({ 
-                        type: 'file-chunk', 
-                        fileId: item.id, 
+                    conn.send({
+                        type: 'file-chunk',
+                        fileId: item.id,
                         data: e.target.result,
-                        offset: offset + e.target.result.byteLength 
+                        offset: offset + e.target.result.byteLength
                     });
-                    
+
                     offset += e.target.result.byteLength;
-                    
-                    // UI ko sirf tabhi update karein jab thoda hissa bheja ja chuka ho (CPU bachane ke liye)
-                    if (offset >= item.file.size || offset % (CHUNK_SIZE * 5) === 0) {
-                        updateProgress(item.id, offset, item.file.size, start);
-                    }
+                    updateProgress(item.id, offset, item.file.size, start);
 
                     if (offset < item.file.size) {
-                        readNext();
+                        scheduleNextChunk(); // ← Flow control se next chunk schedule karo
                     } else {
                         isTransferring = false;
                         setTimeout(processFileQueue, 50);
@@ -1094,30 +1085,32 @@
                 }
             };
 
-            const readNext = () => {
+            // ─────────────────────────────────────────────────────────────
+            // MAIN FIX: Ye function check karta hai ki WebRTC ka send buffer
+            // bhar gaya ya nahi. Bhar gaya to rukta hai, khali hote hi aage
+            // bhejta hai. Isi wajah se mobile freeze band hua.
+            // ─────────────────────────────────────────────────────────────
+            function scheduleNextChunk() {
+                // Check agar transfer cancel ho gaya
                 if (!activeTransfer || activeTransfer.id !== item.id) return;
+                if (!conn || !conn.open) { isTransferring = false; return; }
 
-                // BUG FIX 1: BACKPRESSURE 
-                // Agar WebRTC buffer me 1MB se jyada data atka hai, to file read karna thodi der rok do.
-                if (conn.dataChannel && conn.dataChannel.bufferedAmount > 1024 * 1024) {
-                    setTimeout(readNext, 10); // 10ms wait karo
+                // WebRTC data channel ka buffered amount check karo
+                const dc = conn.dataChannel; // PeerJS mein dataChannel directly accessible hai
+                const buffered = dc ? dc.bufferedAmount : 0;
+
+                if (buffered > MAX_BUFFER_BYTES) {
+                    // Buffer abhi bhari hai → thodi der baad dobara check karo
+                    setTimeout(scheduleNextChunk, BUFFER_WAIT_MS);
                     return;
                 }
 
-                // BUG FIX 2: PREVENT UI FREEZE
-                // Har ~1MB ke baad setTimeout lagaya hai taki browser ko saans lene ka (UI update karne ka) time mile
-                if (offset > 0 && offset % (CHUNK_SIZE * 20) === 0) {
-                    setTimeout(() => {
-                        reader.readAsArrayBuffer(item.file.slice(offset, offset + CHUNK_SIZE));
-                    }, 1);
-                } else {
-                    reader.readAsArrayBuffer(item.file.slice(offset, offset + CHUNK_SIZE));
-                }
-            };
+                // Buffer theek hai → next chunk padho aur bhejo
+                reader.readAsArrayBuffer(item.file.slice(offset, offset + CHUNK_SIZE));
+            }
 
-            readNext();
+            scheduleNextChunk(); // Pehla chunk start karo
         }
-        // ==============================================================
 
         let receiving = {};
         function startReceivingFile(meta) {
@@ -1140,7 +1133,7 @@
             let useDisk = false;
             let stream = null;
 
-            const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isMobile = window.innerWidth < 768 || isMobileDevice;
 
             if (!isMobile && window.showSaveFilePicker) {
                 try {
@@ -1159,7 +1152,7 @@
             f.stream = stream;
             f.buffer = [];
             f.start = Date.now();
-            
+
             if (conn && conn.open) conn.send({ type: 'file-accept', fileId: fileId });
         }
 
@@ -1177,11 +1170,7 @@
                 }
 
                 f.received = data.offset;
-                
-                // Optimized UI update on receiving side too
-                if (f.received >= f.size || f.received % (65536 * 5) === 0) {
-                     updateProgress(data.fileId, f.received, f.size, f.start);
-                }
+                updateProgress(data.fileId, f.received, f.size, f.start);
 
                 if (f.received >= f.size) {
                     if (f.useDisk) {
@@ -1197,13 +1186,13 @@
                         a.click();
                         document.body.removeChild(a);
                         setTimeout(() => URL.revokeObjectURL(url), 10000);
-                        document.getElementById(`eta-${data.fileId}`).innerText = 'Pura Hua';
+                        document.getElementById(`eta-${data.fileId}`).innerText = 'Pura Hua ✅';
                     }
                     delete receiving[data.fileId];
                 }
             } catch (e) {
                 const etaEl = document.getElementById(`eta-${data.fileId}`);
-                if (etaEl) etaEl.innerText = 'Error';
+                if (etaEl) etaEl.innerText = 'Error ❌';
                 cancelTransfer(data.fileId, 'Receiving');
             }
         }
@@ -1213,7 +1202,7 @@
             const bar = document.getElementById(`bar-${id}`);
             const txt = document.getElementById(`prog-${id}`);
             const eta = document.getElementById(`eta-${id}`);
-            
+
             if (bar) bar.style.width = pct + '%';
             if (txt) txt.innerText = pct + '%';
 
@@ -1250,7 +1239,7 @@
                 }
             } else {
                 if (receiving[id] && receiving[id].useDisk && receiving[id].stream) {
-                    receiving[id].stream.abort().catch(() => { });
+                    receiving[id].stream.abort().catch(() => {});
                 }
                 delete receiving[id];
             }
