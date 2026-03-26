@@ -185,9 +185,11 @@
             background: linear-gradient(45deg, #4285f4, #db4437, #f4b400, #0f9d58);
             z-index: -1;
             border-radius: 10px;
+            /* BUG FIX: filter:blur() GPU pe bahut bhari hoti hai mobile par.
+               Desktop par blur chalega, mobile par sirf opacity animation. */
             filter: blur(6px);
             opacity: 0.8;
-            animation: glowing 3s linear infinite;
+            animation: glowing-desktop 3s linear infinite;
         }
 
         .magic-btn-small::after {
@@ -202,10 +204,24 @@
             z-index: -1;
         }
 
-        @keyframes glowing {
-            0% { filter: blur(5px); opacity: 0.6; }
-            50% { filter: blur(8px); opacity: 0.9; }
+        /* Desktop: blur animation (GPU handle kar sakta hai) */
+        @keyframes glowing-desktop {
+            0%   { filter: blur(5px); opacity: 0.6; }
+            50%  { filter: blur(8px); opacity: 0.9; }
             100% { filter: blur(5px); opacity: 0.6; }
+        }
+
+        /* BUG FIX: Mobile par blur bilkul band — sirf opacity animate karo */
+        @media (max-width: 768px) {
+            .magic-btn-small::before {
+                filter: none;           /* ← blur hata diya */
+                animation: glowing-mobile 3s linear infinite;
+            }
+            @keyframes glowing-mobile {
+                0%   { opacity: 0.5; }
+                50%  { opacity: 1.0; }
+                100% { opacity: 0.5; }
+            }
         }
 
         .crypto-input {
