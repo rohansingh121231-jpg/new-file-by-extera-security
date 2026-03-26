@@ -974,22 +974,19 @@
             scrollToBottom();
         }
 
-        // --- THE MASSIVE 50GB FILE HANG FIX (THROTTLED & 16KB CHUNKS) ---
-        document.getElementById('file-input').onchange = function (e) {
-            const files = Array.from(e.target.files);
-            if(files.length === 0) return;
+        // --- THE MASSIVE 50GB FILE HANG FIX (EXACT PURANA SYSTEM) ---
+        document.getElementById('file-input').onchange = function () {
+            if (this.files.length === 0) return;
 
-            // FIX: OS ko delay de rahe hain taaki media picker aaram se close ho jaye phone me
-            setTimeout(() => {
-                for (let f of files) {
-                    const id = Date.now() + Math.random().toString(36).substr(2, 5);
-                    fileQueue.push({ file: f, id: id });
-                    createFileUI(id, f.name, 'Bhej raha hai');
-                }
-                processFileQueue();
-            }, 600); 
-
-            setTimeout(() => { e.target.value = ''; }, 1000); 
+            // Strict synchronous array generation like old working system
+            for (let i = 0; i < this.files.length; i++) {
+                let f = this.files[i];
+                const id = Date.now() + Math.random().toString(36).substr(2, 5);
+                fileQueue.push({ file: f, id: id });
+                createFileUI(id, f.name, 'Bhej raha hai');
+            }
+            processFileQueue();
+            this.value = ''; // Safely clear immediately
         };
 
         function createFileUI(id, name, type) {
@@ -1026,29 +1023,41 @@
             let offset = 0;
             let start = Date.now();
             
-            // FIX: Purane system ki tarah strictly 16KB Chunk Size. RAM par zero load padega.
-            const CHUNK_SIZE = 16384; 
-            const MAX_BUFFER = 1024 * 1024; // 1MB Maximum WebRTC memory
+            const CHUNK_SIZE = 65536; // 64KB for optimal WebRTC & Crypto speed
+            const MAX_BUFFER = 1024 * 1024 * 2; // 2MB memory block limit
             
             const reader = new FileReader();
 
+            function readNextChunk() {
+                if (!activeTransfer || activeTransfer.id !== item.id) return;
+                
+                // Backpressure handling to prevent memory crash
+                if (conn.dataChannel && conn.dataChannel.bufferedAmount > MAX_BUFFER) {
+                    setTimeout(readNextChunk, 20);
+                } else {
+                    // Uses Native OS Event Loop Yielding (exactly like the old system)
+                    reader.readAsArrayBuffer(item.file.slice(offset, offset + CHUNK_SIZE));
+                }
+            }
+
             reader.onload = async (e) => {
                 if (!activeTransfer || activeTransfer.id !== item.id) return;
-                const chunkBuffer = e.target.result;
-                const iv = window.crypto.getRandomValues(new Uint8Array(12));
-
+                
                 try {
+                    const chunkBuffer = e.target.result;
+                    // Passing native Uint8Array - NO MORE Array.from() Memory Leak!
+                    const iv = window.crypto.getRandomValues(new Uint8Array(12)); 
                     const encryptedChunk = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, globalAesKey, chunkBuffer);
+
                     offset += chunkBuffer.byteLength;
 
                     if (conn && conn.open) {
-                        conn.send({ type: 'file-chunk', fileId: item.id, iv: Array.from(iv), data: encryptedChunk, offset: offset });
+                        conn.send({ type: 'file-chunk', fileId: item.id, iv: iv, data: encryptedChunk, offset: offset });
                         
-                        // Pass to throttled UI updater so it doesn't freeze the phone CPU
                         updateProgress(item.id, offset, item.file.size, start);
 
                         if (offset < item.file.size) {
-                            checkBufferAndReadNext();
+                            readNextChunk();
                         } else {
                             isTransferring = false;
                             setTimeout(processFileQueue, 50);
@@ -1062,22 +1071,8 @@
                 }
             };
 
-            function checkBufferAndReadNext() {
-                if (!activeTransfer || activeTransfer.id !== item.id) return;
-                
-                if (conn.dataChannel && conn.dataChannel.bufferedAmount > MAX_BUFFER) {
-                    // Agar connection line me bhid hai, ruk jayein (Prevents Crash)
-                    setTimeout(checkBufferAndReadNext, 50);
-                } else {
-                    // Browser thread ko lagatar kaam na de, 0ms timeout se OS ko 'saans' milti hai
-                    setTimeout(() => {
-                        if (!activeTransfer || activeTransfer.id !== item.id) return;
-                        const slice = item.file.slice(offset, offset + CHUNK_SIZE);
-                        reader.readAsArrayBuffer(slice);
-                    }, 0);
-                }
-            }
-            checkBufferAndReadNext();
+            // Start reading the first chunk immediately
+            readNextChunk();
         }
 
         let receiving = {};
@@ -1101,7 +1096,6 @@
             let useDisk = false;
             let stream = null;
 
-            // Check if mobile. Mobile browsers fail silently on disk APIs usually.
             const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
             if (!isMobile && window.showSaveFilePicker) {
@@ -1130,7 +1124,9 @@
             if (!f || !globalAesKey) return;
 
             try {
-                const decryptedChunk = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: new Uint8Array(data.iv) }, globalAesKey, data.data);
+                // Accepts raw native Uint8Array binary format without converting from large objects
+                const iv = data.iv instanceof Uint8Array ? data.iv : new Uint8Array(data.iv);
+                const decryptedChunk = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, globalAesKey, data.data);
 
                 if (f.useDisk) {
                     await f.stream.write(decryptedChunk);
@@ -1166,14 +1162,10 @@
             }
         }
 
-        // FIX: THROTTLED PROGRESS BAR UPDATE 
-        // 1 sec me hazar bar update karne ki jagah ab sirf max 4 bar (250ms interval) karega. 
-        // Screen atakne ki problem jadh se khatam!
         function updateProgress(id, cur, tot, start) {
             const now = Date.now();
             if (!progressThrottleMap[id]) progressThrottleMap[id] = 0;
 
-            // Sirf tab update karo jab pichle update ko 250 milisecond guzar gaye ho ya file 100% puri ho gayi ho
             if (now - progressThrottleMap[id] > 250 || cur >= tot) {
                 progressThrottleMap[id] = now;
 
