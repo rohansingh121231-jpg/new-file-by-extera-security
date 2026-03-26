@@ -856,7 +856,6 @@
 
             conn.on('data', handleData);
             conn.on('close', () => {
-                // If disconnected after burn, enforce reload to create new room
                 if (roomLocked) {
                     alert('Connection Lost. Ye link ab expire ho chuka hai. Naya room banayein.');
                 } else {
@@ -1050,6 +1049,9 @@
             }
         }
 
+        // ==============================================================
+        // 🔥 BUG FIX: SENDER FUNCTION WITH BACKPRESSURE & TIMEOUT YIELD
+        // ==============================================================
         function startSendingActiveTransfer(fileId) {
             if (!activeTransfer || activeTransfer.id !== fileId || !conn || !conn.open) return;
 
@@ -1059,7 +1061,8 @@
             let offset = 0;
             let start = Date.now();
             
-            // EXACT PURANA SYSTEM WALA SENDER ENGINE
+            // CHUNK SIZE INCREASED TO 64KB FOR BETTER PERFORMANCE
+            const CHUNK_SIZE = 65536; 
             const reader = new FileReader();
 
             reader.onload = (e) => {
@@ -1075,7 +1078,10 @@
                     
                     offset += e.target.result.byteLength;
                     
-                    updateProgress(item.id, offset, item.file.size, start);
+                    // UI ko sirf tabhi update karein jab thoda hissa bheja ja chuka ho (CPU bachane ke liye)
+                    if (offset >= item.file.size || offset % (CHUNK_SIZE * 5) === 0) {
+                        updateProgress(item.id, offset, item.file.size, start);
+                    }
 
                     if (offset < item.file.size) {
                         readNext();
@@ -1089,11 +1095,29 @@
             };
 
             const readNext = () => {
-                reader.readAsArrayBuffer(item.file.slice(offset, offset + 16384)); // 16KB exact purana size
+                if (!activeTransfer || activeTransfer.id !== item.id) return;
+
+                // BUG FIX 1: BACKPRESSURE 
+                // Agar WebRTC buffer me 1MB se jyada data atka hai, to file read karna thodi der rok do.
+                if (conn.dataChannel && conn.dataChannel.bufferedAmount > 1024 * 1024) {
+                    setTimeout(readNext, 10); // 10ms wait karo
+                    return;
+                }
+
+                // BUG FIX 2: PREVENT UI FREEZE
+                // Har ~1MB ke baad setTimeout lagaya hai taki browser ko saans lene ka (UI update karne ka) time mile
+                if (offset > 0 && offset % (CHUNK_SIZE * 20) === 0) {
+                    setTimeout(() => {
+                        reader.readAsArrayBuffer(item.file.slice(offset, offset + CHUNK_SIZE));
+                    }, 1);
+                } else {
+                    reader.readAsArrayBuffer(item.file.slice(offset, offset + CHUNK_SIZE));
+                }
             };
 
             readNext();
         }
+        // ==============================================================
 
         let receiving = {};
         function startReceivingFile(meta) {
@@ -1153,7 +1177,11 @@
                 }
 
                 f.received = data.offset;
-                updateProgress(data.fileId, f.received, f.size, f.start);
+                
+                // Optimized UI update on receiving side too
+                if (f.received >= f.size || f.received % (65536 * 5) === 0) {
+                     updateProgress(data.fileId, f.received, f.size, f.start);
+                }
 
                 if (f.received >= f.size) {
                     if (f.useDisk) {
