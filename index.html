@@ -1060,8 +1060,9 @@
             let offset = 0;
             let start = Date.now();
             
-            const CHUNK_SIZE = 65536; // 64KB
-            const MAX_BUFFER = 1024 * 1024 * 2; 
+            // EXACT PURANA SYSTEM: 16KB Chunk Size aur normal buffer
+            const CHUNK_SIZE = 16384; // 16KB
+            const MAX_BUFFER = 1024 * 1024 * 2; // 2MB Buffer
             
             const reader = new FileReader();
 
@@ -1071,6 +1072,7 @@
                 if (conn.dataChannel && conn.dataChannel.bufferedAmount > MAX_BUFFER) {
                     setTimeout(readNextChunk, 20); // Wait for WebRTC to clear buffer
                 } else {
+                    // PURANA STYLE: Direct async call, extra setTimeout ki koi zarurat nahi
                     reader.readAsArrayBuffer(item.file.slice(offset, offset + CHUNK_SIZE));
                 }
             }
@@ -1163,7 +1165,11 @@
                 }
 
                 f.received = data.offset;
-                updateProgress(data.fileId, f.received, f.size, f.start);
+                
+                // Progress bar update ko smoothly render karna (UI hang rokne ke liye)
+                requestAnimationFrame(() => {
+                    updateProgress(data.fileId, f.received, f.size, f.start);
+                });
 
                 if (f.received >= f.size) {
                     if (f.useDisk) {
