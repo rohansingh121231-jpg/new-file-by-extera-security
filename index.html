@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -589,7 +589,6 @@
         let typingTimeout;
         let callMode = 'ring';
         let vibrateInterval;
-        let progressThrottleMap = {};
 
         // --- NEW FEATURE: SELF-DESTRUCTING LINK (BURN AFTER CONNECT) ---
         let roomLocked = false; 
@@ -1035,7 +1034,7 @@
             document.getElementById('transfer-list').prepend(div);
         }
 
-        async function processFileQueue() {
+        function processFileQueue() {
             if (isTransferring || fileQueue.length === 0) return;
             if (!conn || !conn.open) return;
 
@@ -1060,51 +1059,41 @@
             let offset = 0;
             let start = Date.now();
             
-            // EXACT PURANA SYSTEM: 16KB Chunk Size aur normal buffer
-            const CHUNK_SIZE = 16384; // 16KB
-            const MAX_BUFFER = 1024 * 1024 * 2; // 2MB Buffer
-            
+            // EXACT PURANA SYSTEM WALA ENGINE (Macrotask FileReader)
             const reader = new FileReader();
-
-            function readNextChunk() {
-                if (!activeTransfer || activeTransfer.id !== item.id) return;
-                
-                if (conn.dataChannel && conn.dataChannel.bufferedAmount > MAX_BUFFER) {
-                    setTimeout(readNextChunk, 20); // Wait for WebRTC to clear buffer
-                } else {
-                    // PURANA STYLE: Direct async call, extra setTimeout ki koi zarurat nahi
-                    reader.readAsArrayBuffer(item.file.slice(offset, offset + CHUNK_SIZE));
-                }
-            }
 
             reader.onload = (e) => {
                 if (!activeTransfer || activeTransfer.id !== item.id) return;
                 
-                try {
-                    const rawChunkBuffer = e.target.result;
-                    offset += rawChunkBuffer.byteLength;
+                if (conn && conn.open) {
+                    conn.send({ 
+                        type: 'file-chunk', 
+                        fileId: item.id, 
+                        data: e.target.result,
+                        offset: offset + e.target.result.byteLength 
+                    });
+                    
+                    offset += e.target.result.byteLength;
+                    
+                    updateProgress(item.id, offset, item.file.size, start);
 
-                    if (conn && conn.open) {
-                        conn.send({ type: 'file-chunk', fileId: item.id, data: rawChunkBuffer, offset: offset });
-                        
-                        updateProgress(item.id, offset, item.file.size, start);
-
-                        if (offset < item.file.size) {
-                            readNextChunk();
-                        } else {
-                            isTransferring = false;
-                            setTimeout(processFileQueue, 50);
-                        }
+                    if (offset < item.file.size) {
+                        readNext();
                     } else {
                         isTransferring = false;
+                        setTimeout(processFileQueue, 50);
                     }
-                } catch (err) {
-                    console.error("Chunk read failed", err);
+                } else {
                     isTransferring = false;
                 }
             };
 
-            readNextChunk();
+            const readNext = () => {
+                // 16384 bytes (16KB) - Same as your old working code!
+                reader.readAsArrayBuffer(item.file.slice(offset, offset + 16384));
+            };
+
+            readNext();
         }
 
         let receiving = {};
@@ -1165,11 +1154,7 @@
                 }
 
                 f.received = data.offset;
-                
-                // Progress bar update ko smoothly render karna (UI hang rokne ke liye)
-                requestAnimationFrame(() => {
-                    updateProgress(data.fileId, f.received, f.size, f.start);
-                });
+                updateProgress(data.fileId, f.received, f.size, f.start);
 
                 if (f.received >= f.size) {
                     if (f.useDisk) {
@@ -1197,29 +1182,22 @@
         }
 
         function updateProgress(id, cur, tot, start) {
-            const now = Date.now();
-            if (!progressThrottleMap[id]) progressThrottleMap[id] = 0;
+            const pct = Math.round((cur / tot) * 100);
+            const bar = document.getElementById(`bar-${id}`);
+            const txt = document.getElementById(`prog-${id}`);
+            const eta = document.getElementById(`eta-${id}`);
+            
+            if (bar) bar.style.width = pct + '%';
+            if (txt) txt.innerText = pct + '%';
 
-            if (now - progressThrottleMap[id] > 250 || cur >= tot) {
-                progressThrottleMap[id] = now;
-
-                const pct = Math.min(100, Math.round((cur / tot) * 100));
-                const bar = document.getElementById(`bar-${id}`);
-                const txt = document.getElementById(`prog-${id}`);
-                const eta = document.getElementById(`eta-${id}`);
-                
-                if (bar) bar.style.width = pct + '%';
-                if (txt) txt.innerText = pct + '%';
-
-                if (start) {
-                    const elapsed = (now - start) / 1000;
-                    if (elapsed > 0) {
-                        const rate = cur / elapsed;
-                        const left = (tot - cur) / rate;
-                        if (eta && isFinite(left)) {
-                            if (!eta.innerHTML.includes('<button')) {
-                                eta.innerText = left < 1 ? 'Save ho raha hai...' : formatTime(left) + ' bacha hai';
-                            }
+            if (start) {
+                const elapsed = (Date.now() - start) / 1000;
+                if (elapsed > 0) {
+                    const rate = cur / elapsed;
+                    const left = (tot - cur) / rate;
+                    if (eta && isFinite(left)) {
+                        if (!eta.innerHTML.includes('<button')) {
+                            eta.innerText = left < 1 ? 'Save ho raha hai...' : formatTime(left) + ' bacha hai';
                         }
                     }
                 }
