@@ -440,7 +440,7 @@
                 <div class="files-header">
                     <span>File Transfer</span>
                     <button class="magic-btn-small" onclick="document.getElementById('file-input').click()">
-                        <span style="font-size:16px;"></span> File Dalein
+                        <span style="font-size:16px;">📁</span> File Dalein
                     </button>
                 </div>
                 <input type="file" id="file-input" multiple>
@@ -487,7 +487,7 @@
 
     <!-- OVERLAYS & MODALS -->
 
-    <!-- HOST SETUP MODAL (Mandatory Password before starting) -->
+    <!-- HOST SETUP MODAL -->
     <div class="modal" id="host-setup-modal">
         <div class="perm-card">
             <div class="perm-icon">🔐</div>
@@ -589,8 +589,8 @@
         let callMode = 'ring';
         let vibrateInterval;
 
-        // Check if device is mobile to optimize chunks and buffers
-        const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // UI progress update throttler map
+        let progressThrottleMap = {};
 
         // --- NEW SECURE CRYPTOGRAPHY ENGINE ---
         let globalAesKey = null;
@@ -671,13 +671,10 @@
                 if (e.key === 'Enter') sendText();
             });
 
-            // CHAT IMAGE (WhatsApp style) - Base64 compression before encryption
             document.getElementById('img-input').addEventListener('change', async function (e) {
                 const file = e.target.files[0];
                 if (!file || !globalAesKey) return;
 
-                // FIX: Mobile devices hang if we instantly process large camera images while picker is closing. 
-                // Delaying allows OS to finish UI transition smoothly.
                 setTimeout(() => {
                     const img = new Image();
                     img.src = URL.createObjectURL(file);
@@ -705,9 +702,8 @@
                         if (conn && conn.open) conn.send({ type: 'image', id: msgId, iv: iv, cipher: cipher });
                         addImage(compressedBase64, 'sent', msgId);
                     };
-                }, 400); 
+                }, 500); 
 
-                // Reset safely later
                 setTimeout(() => { e.target.value = ''; }, 1000);
             });
         });
@@ -734,8 +730,7 @@
             }
         }
         
-        // Initial set
-        toggleSoundMode(); toggleSoundMode(); toggleSoundMode(); // reset to ring initially with icon
+        toggleSoundMode(); toggleSoundMode(); toggleSoundMode();
 
         function playCallAlert() {
             if (callMode === 'silent') return;
@@ -892,7 +887,7 @@
                 case 'text':
                     try {
                         const text = await decryptString(data.cipher, data.iv, globalAesKey);
-                        addMessage(text, 'received', data.reply, data.id); // Fixed pass id
+                        addMessage(text, 'received', data.reply, data.id);
                         conn.send({ type: 'ack', id: data.id });
                     } catch (e) { console.error("Message decrypt nahi hua"); }
                     break;
@@ -906,27 +901,13 @@
                 case 'typing':
                     document.getElementById('typing-indicator').style.display = data.isTyping ? 'block' : 'none';
                     break;
-                case 'ack':
-                    markRead(data.id);
-                    break;
-                case 'dl-notify':
-                    markDownloaded(data.id);
-                    break;
-                case 'file-meta':
-                    startReceivingFile(data);
-                    break;
-                case 'file-accept':
-                    startSendingActiveTransfer(data.fileId);
-                    break;
-                case 'file-chunk':
-                    processFileChunk(data);
-                    break;
-                case 'file-cancel':
-                    handleFileCancel(data.fileId);
-                    break;
-                case 'call-end':
-                    endCallUI();
-                    break;
+                case 'ack': markRead(data.id); break;
+                case 'dl-notify': markDownloaded(data.id); break;
+                case 'file-meta': startReceivingFile(data); break;
+                case 'file-accept': startSendingActiveTransfer(data.fileId); break;
+                case 'file-chunk': processFileChunk(data); break;
+                case 'file-cancel': handleFileCancel(data.fileId); break;
+                case 'call-end': endCallUI(); break;
             }
         }
 
@@ -940,9 +921,7 @@
             document.getElementById('connect-panel').style.display = 'none';
             document.getElementById('connection-status').innerText = 'Online';
             
-            if (window.innerWidth < 768) {
-                document.getElementById('sidebar').classList.add('hidden');
-            }
+            if (window.innerWidth < 768) document.getElementById('sidebar').classList.add('hidden');
         }
 
         async function shareQRCode() {
@@ -961,7 +940,6 @@
             } catch (e) { console.error("Error sharing QR", e); }
         }
 
-        // --- CHAT FUNCTIONS ---
         async function sendText() {
             const input = document.getElementById('msg-input');
             const val = input.value.trim();
@@ -996,13 +974,12 @@
             scrollToBottom();
         }
 
-        // --- FIX 2: HANG-FREE DIRECT-TO-DISK FILE TRANSFER ---
-        
-        // CRITICAL FIX: Add a slight delay so the OS Media Picker closes completely before JS loops freeze the UI.
+        // --- THE MASSIVE 50GB FILE HANG FIX (THROTTLED & 16KB CHUNKS) ---
         document.getElementById('file-input').onchange = function (e) {
             const files = Array.from(e.target.files);
             if(files.length === 0) return;
 
+            // FIX: OS ko delay de rahe hain taaki media picker aaram se close ho jaye phone me
             setTimeout(() => {
                 for (let f of files) {
                     const id = Date.now() + Math.random().toString(36).substr(2, 5);
@@ -1010,9 +987,9 @@
                     createFileUI(id, f.name, 'Bhej raha hai');
                 }
                 processFileQueue();
-            }, 400); // 400ms delay stops mobile browser hang!
+            }, 600); 
 
-            setTimeout(() => { e.target.value = ''; }, 1000); // Clear safely later
+            setTimeout(() => { e.target.value = ''; }, 1000); 
         };
 
         function createFileUI(id, name, type) {
@@ -1049,9 +1026,9 @@
             let offset = 0;
             let start = Date.now();
             
-            // MOBILE OPTIMIZATION FIX: Smaller chunks and limited memory buffer for phones
-            const CHUNK_SIZE = isMobileDevice ? (64 * 1024) : (256 * 1024); // 64KB for mobile
-            const MAX_BUFFER = isMobileDevice ? (1 * 1024 * 1024) : (8 * 1024 * 1024); // 1MB buffer limit for mobile
+            // FIX: Purane system ki tarah strictly 16KB Chunk Size. RAM par zero load padega.
+            const CHUNK_SIZE = 16384; 
+            const MAX_BUFFER = 1024 * 1024; // 1MB Maximum WebRTC memory
             
             const reader = new FileReader();
 
@@ -1066,6 +1043,8 @@
 
                     if (conn && conn.open) {
                         conn.send({ type: 'file-chunk', fileId: item.id, iv: Array.from(iv), data: encryptedChunk, offset: offset });
+                        
+                        // Pass to throttled UI updater so it doesn't freeze the phone CPU
                         updateProgress(item.id, offset, item.file.size, start);
 
                         if (offset < item.file.size) {
@@ -1087,18 +1066,15 @@
                 if (!activeTransfer || activeTransfer.id !== item.id) return;
                 
                 if (conn.dataChannel && conn.dataChannel.bufferedAmount > MAX_BUFFER) {
-                    // Buffer is full, wait so phone doesn't crash
-                    setTimeout(checkBufferAndReadNext, 100);
+                    // Agar connection line me bhid hai, ruk jayein (Prevents Crash)
+                    setTimeout(checkBufferAndReadNext, 50);
                 } else {
-                    // CRITICAL FIX: requestAnimationFrame yields to the browser's UI thread 
-                    // preventing the entire app from hanging during encryption!
-                    requestAnimationFrame(() => {
-                        setTimeout(() => {
-                            if (!activeTransfer || activeTransfer.id !== item.id) return;
-                            const slice = item.file.slice(offset, offset + CHUNK_SIZE);
-                            reader.readAsArrayBuffer(slice);
-                        }, 0);
-                    });
+                    // Browser thread ko lagatar kaam na de, 0ms timeout se OS ko 'saans' milti hai
+                    setTimeout(() => {
+                        if (!activeTransfer || activeTransfer.id !== item.id) return;
+                        const slice = item.file.slice(offset, offset + CHUNK_SIZE);
+                        reader.readAsArrayBuffer(slice);
+                    }, 0);
                 }
             }
             checkBufferAndReadNext();
@@ -1125,7 +1101,10 @@
             let useDisk = false;
             let stream = null;
 
-            if (!isMobileDevice && window.showSaveFilePicker) {
+            // Check if mobile. Mobile browsers fail silently on disk APIs usually.
+            const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+            if (!isMobile && window.showSaveFilePicker) {
                 try {
                     const handle = await window.showSaveFilePicker({ suggestedName: f.name });
                     stream = await handle.createWritable();
@@ -1135,7 +1114,6 @@
                         if (etaEl) etaEl.innerHTML = `<button class="btn-accept-file" onclick="acceptFileTransfer('${fileId}')"> Save Karein</button>`;
                         return;
                     }
-                    console.warn("Disk API failed, falling back to RAM", err);
                 }
             }
 
@@ -1161,11 +1139,7 @@
                 }
 
                 f.received = data.offset;
-                
-                // MAIN THREAD FIX: Use requestAnimationFrame for smooth UI updates
-                requestAnimationFrame(() => {
-                    updateProgress(data.fileId, f.received, f.size, f.start);
-                });
+                updateProgress(data.fileId, f.received, f.size, f.start);
 
                 if (f.received >= f.size) {
                     if (f.useDisk) {
@@ -1192,23 +1166,34 @@
             }
         }
 
+        // FIX: THROTTLED PROGRESS BAR UPDATE 
+        // 1 sec me hazar bar update karne ki jagah ab sirf max 4 bar (250ms interval) karega. 
+        // Screen atakne ki problem jadh se khatam!
         function updateProgress(id, cur, tot, start) {
-            const pct = Math.min(100, Math.round((cur / tot) * 100));
-            const bar = document.getElementById(`bar-${id}`);
-            const txt = document.getElementById(`prog-${id}`);
-            const eta = document.getElementById(`eta-${id}`);
-            
-            if (bar) bar.style.width = pct + '%';
-            if (txt) txt.innerText = pct + '%';
+            const now = Date.now();
+            if (!progressThrottleMap[id]) progressThrottleMap[id] = 0;
 
-            if (start) {
-                const elapsed = (Date.now() - start) / 1000;
-                if (elapsed > 0) {
-                    const rate = cur / elapsed;
-                    const left = (tot - cur) / rate;
-                    if (eta && isFinite(left)) {
-                        if (!eta.innerHTML.includes('<button')) {
-                            eta.innerText = left < 1 ? 'Save ho raha hai...' : formatTime(left) + ' bacha hai';
+            // Sirf tab update karo jab pichle update ko 250 milisecond guzar gaye ho ya file 100% puri ho gayi ho
+            if (now - progressThrottleMap[id] > 250 || cur >= tot) {
+                progressThrottleMap[id] = now;
+
+                const pct = Math.min(100, Math.round((cur / tot) * 100));
+                const bar = document.getElementById(`bar-${id}`);
+                const txt = document.getElementById(`prog-${id}`);
+                const eta = document.getElementById(`eta-${id}`);
+                
+                if (bar) bar.style.width = pct + '%';
+                if (txt) txt.innerText = pct + '%';
+
+                if (start) {
+                    const elapsed = (now - start) / 1000;
+                    if (elapsed > 0) {
+                        const rate = cur / elapsed;
+                        const left = (tot - cur) / rate;
+                        if (eta && isFinite(left)) {
+                            if (!eta.innerHTML.includes('<button')) {
+                                eta.innerText = left < 1 ? 'Save ho raha hai...' : formatTime(left) + ' bacha hai';
+                            }
                         }
                     }
                 }
@@ -1254,19 +1239,9 @@
             delete receiving[id];
         }
 
-        function scrollToBottom() {
-            document.getElementById('messages').scrollTop = 1000000;
-        }
-
-        function markRead(id) {
-            const el = document.querySelector(`#msg-${id} .double-tick`);
-            if (el) el.innerText = '✓✓';
-        }
-
-        function markDownloaded(id) {
-            const el = document.querySelector(`#msg-${id} .download-indicator`);
-            if (el) el.style.display = 'block';
-        }
+        function scrollToBottom() { document.getElementById('messages').scrollTop = 1000000; }
+        function markRead(id) { const el = document.querySelector(`#msg-${id} .double-tick`); if (el) el.innerText = '✓✓'; }
+        function markDownloaded(id) { const el = document.querySelector(`#msg-${id} .download-indicator`); if (el) el.style.display = 'block'; }
 
         function openModal(src, type, id) {
             document.getElementById('img-modal').style.display = 'flex';
@@ -1281,20 +1256,9 @@
             }
         }
 
-        function closeModal() {
-            document.getElementById('img-modal').style.display = 'none';
-        }
-
-        function setReply(t) {
-            replyContext = { text: t };
-            document.getElementById('reply-bar').style.display = 'flex';
-            document.getElementById('reply-text-preview').innerText = t.substring(0, 50) + '...';
-        }
-
-        function cancelReply() {
-            replyContext = null;
-            document.getElementById('reply-bar').style.display = 'none';
-        }
+        function closeModal() { document.getElementById('img-modal').style.display = 'none'; }
+        function setReply(t) { replyContext = { text: t }; document.getElementById('reply-bar').style.display = 'flex'; document.getElementById('reply-text-preview').innerText = t.substring(0, 50) + '...'; }
+        function cancelReply() { replyContext = null; document.getElementById('reply-bar').style.display = 'none'; }
 
         // --- CALLS & MEDIA ---
         const mediaConstraints = {
