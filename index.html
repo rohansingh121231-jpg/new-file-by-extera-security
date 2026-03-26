@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -1059,7 +1059,7 @@
             let offset = 0;
             let start = Date.now();
             
-            // EXACT PURANA SYSTEM WALA ENGINE (Macrotask FileReader)
+            // EXACT PURANA SYSTEM WALA SENDER ENGINE
             const reader = new FileReader();
 
             reader.onload = (e) => {
@@ -1089,8 +1089,7 @@
             };
 
             const readNext = () => {
-                // 16384 bytes (16KB) - Same as your old working code!
-                reader.readAsArrayBuffer(item.file.slice(offset, offset + 16384));
+                reader.readAsArrayBuffer(item.file.slice(offset, offset + 16384)); // 16KB exact purana size
             };
 
             readNext();
@@ -1190,16 +1189,13 @@
             if (bar) bar.style.width = pct + '%';
             if (txt) txt.innerText = pct + '%';
 
-            if (start) {
-                const elapsed = (Date.now() - start) / 1000;
-                if (elapsed > 0) {
-                    const rate = cur / elapsed;
-                    const left = (tot - cur) / rate;
-                    if (eta && isFinite(left)) {
-                        if (!eta.innerHTML.includes('<button')) {
-                            eta.innerText = left < 1 ? 'Save ho raha hai...' : formatTime(left) + ' bacha hai';
-                        }
-                    }
+            const elapsed = (Date.now() - start) / 1000;
+            const rate = cur / elapsed;
+            const left = (tot - cur) / rate;
+
+            if (eta && isFinite(left)) {
+                if (!eta.innerHTML.includes('<button')) {
+                    eta.innerText = left < 1 ? 'Done' : formatTime(left) + ' bacha hai';
                 }
             }
         }
