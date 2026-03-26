@@ -517,7 +517,7 @@
                 <rect class="lock-body" x="30" y="45" width="40" height="35" rx="5" />
                 <polyline class="checkmark" points="40,62 47,69 62,54" />
             </svg>
-            <p style="color: white; font-weight: 600; margin-top: 15px; font-size: 18px;">End-to-End Encrypted</p>
+            <p style="color: white; font-weight: 600; margin-top: 15px; font-size: 18px;">DTLS End-to-End Encrypted</p>
         </div>
     </div>
 
@@ -589,10 +589,10 @@
         let callMode = 'ring';
         let vibrateInterval;
 
-        // UI progress update throttler map
         let progressThrottleMap = {};
 
         // --- NEW SECURE CRYPTOGRAPHY ENGINE ---
+        // Ise hum ab sirf Room Auth, Text aur Images ke liye use karenge
         let globalAesKey = null;
         let urlSaltHex = '';
 
@@ -905,7 +905,7 @@
                 case 'dl-notify': markDownloaded(data.id); break;
                 case 'file-meta': startReceivingFile(data); break;
                 case 'file-accept': startSendingActiveTransfer(data.fileId); break;
-                case 'file-chunk': processFileChunk(data); break;
+                case 'file-chunk': processFileChunk(data); break; // AB YEH BINA JS ENCRYPTION KE CHALEGA
                 case 'file-cancel': handleFileCancel(data.fileId); break;
                 case 'call-end': endCallUI(); break;
             }
@@ -974,11 +974,10 @@
             scrollToBottom();
         }
 
-        // --- THE MASSIVE 50GB FILE HANG FIX (EXACT PURANA SYSTEM) ---
+        // --- MASTERPLAN FILE TRANSFER (WebRTC Native DTLS Encryption) ---
         document.getElementById('file-input').onchange = function () {
             if (this.files.length === 0) return;
 
-            // Strict synchronous array generation like old working system
             for (let i = 0; i < this.files.length; i++) {
                 let f = this.files[i];
                 const id = Date.now() + Math.random().toString(36).substr(2, 5);
@@ -986,7 +985,7 @@
                 createFileUI(id, f.name, 'Bhej raha hai');
             }
             processFileQueue();
-            this.value = ''; // Safely clear immediately
+            this.value = ''; 
         };
 
         function createFileUI(id, name, type) {
@@ -1000,7 +999,7 @@
 
         async function processFileQueue() {
             if (isTransferring || fileQueue.length === 0) return;
-            if (!conn || !conn.open || !globalAesKey) return;
+            if (!conn || !conn.open) return;
 
             const item = fileQueue.shift();
             activeTransfer = item;
@@ -1015,7 +1014,7 @@
         }
 
         function startSendingActiveTransfer(fileId) {
-            if (!activeTransfer || activeTransfer.id !== fileId || !conn || !conn.open || !globalAesKey) return;
+            if (!activeTransfer || activeTransfer.id !== fileId || !conn || !conn.open) return;
 
             document.getElementById(`eta-${fileId}`).innerText = 'Bhej raha hai...';
 
@@ -1023,36 +1022,32 @@
             let offset = 0;
             let start = Date.now();
             
-            const CHUNK_SIZE = 65536; // 64KB for optimal WebRTC & Crypto speed
-            const MAX_BUFFER = 1024 * 1024 * 2; // 2MB memory block limit
+            const CHUNK_SIZE = 65536; // 64KB
+            const MAX_BUFFER = 1024 * 1024 * 2; 
             
             const reader = new FileReader();
 
             function readNextChunk() {
                 if (!activeTransfer || activeTransfer.id !== item.id) return;
                 
-                // Backpressure handling to prevent memory crash
                 if (conn.dataChannel && conn.dataChannel.bufferedAmount > MAX_BUFFER) {
-                    setTimeout(readNextChunk, 20);
+                    setTimeout(readNextChunk, 20); // Wait for WebRTC to clear buffer
                 } else {
-                    // Uses Native OS Event Loop Yielding (exactly like the old system)
                     reader.readAsArrayBuffer(item.file.slice(offset, offset + CHUNK_SIZE));
                 }
             }
 
-            reader.onload = async (e) => {
+            reader.onload = (e) => {
                 if (!activeTransfer || activeTransfer.id !== item.id) return;
                 
                 try {
-                    const chunkBuffer = e.target.result;
-                    // Passing native Uint8Array - NO MORE Array.from() Memory Leak!
-                    const iv = window.crypto.getRandomValues(new Uint8Array(12)); 
-                    const encryptedChunk = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, globalAesKey, chunkBuffer);
-
-                    offset += chunkBuffer.byteLength;
+                    // YAHAN HUMNE JS ENCRYPTION HATA DIYA HAI.
+                    // WebRTC native hardware acceleration (DTLS) se is raw buffer ko encrypt karke bhejega!
+                    const rawChunkBuffer = e.target.result;
+                    offset += rawChunkBuffer.byteLength;
 
                     if (conn && conn.open) {
-                        conn.send({ type: 'file-chunk', fileId: item.id, iv: iv, data: encryptedChunk, offset: offset });
+                        conn.send({ type: 'file-chunk', fileId: item.id, data: rawChunkBuffer, offset: offset });
                         
                         updateProgress(item.id, offset, item.file.size, start);
 
@@ -1066,12 +1061,11 @@
                         isTransferring = false;
                     }
                 } catch (err) {
-                    console.error("Encryption failed", err);
+                    console.error("Chunk read failed", err);
                     isTransferring = false;
                 }
             };
 
-            // Start reading the first chunk immediately
             readNextChunk();
         }
 
@@ -1121,17 +1115,16 @@
 
         async function processFileChunk(data) {
             const f = receiving[data.fileId];
-            if (!f || !globalAesKey) return;
+            if (!f) return;
 
             try {
-                // Accepts raw native Uint8Array binary format without converting from large objects
-                const iv = data.iv instanceof Uint8Array ? data.iv : new Uint8Array(data.iv);
-                const decryptedChunk = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, globalAesKey, data.data);
+                // JS ENCRYPTION HATA DIYA - WebRTC ne pehle hi DTLS decrypt kar diya hai background me
+                const rawChunk = data.data;
 
                 if (f.useDisk) {
-                    await f.stream.write(decryptedChunk);
+                    await f.stream.write(rawChunk);
                 } else {
-                    f.buffer.push(decryptedChunk);
+                    f.buffer.push(rawChunk);
                 }
 
                 f.received = data.offset;
@@ -1157,7 +1150,7 @@
                 }
             } catch (e) {
                 const etaEl = document.getElementById(`eta-${data.fileId}`);
-                if (etaEl) etaEl.innerText = 'Decryption Error';
+                if (etaEl) etaEl.innerText = 'Error';
                 cancelTransfer(data.fileId, 'Receiving');
             }
         }
